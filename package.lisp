@@ -1,4 +1,4 @@
 ;;;; package.lisp
 
 (defpackage #:ten
-  (:use #:cl))
+  (:use #:cl #:taclib #:classimp))
