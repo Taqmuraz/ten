@@ -12,6 +12,7 @@
           (loop for b across bs collect
             (make-assoc
               :name (ai:name b)
+              :matrix (ai:offset-matrix b)
               :weights (-> b ai:weights load-weights)
             )
           )
@@ -34,4 +35,8 @@
       (loop for m across meshes collect (load-submesh m))
     )
   )
+)
+
+(defun display-model (model)
+  ()
 )
