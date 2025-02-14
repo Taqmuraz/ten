@@ -10,7 +10,7 @@
       (load-bones (bs)
         (when bs
           (loop for b across bs collect
-            (make-hash
+            (make-assoc
               :name (ai:name b)
               :weights (-> b ai:weights load-weights)
             )
@@ -18,7 +18,7 @@
         )
       )
       (load-submesh (m)
-        (make-hash
+        (make-assoc
           :verts (ai:vertices m)
           :normals (ai:normals m)
           :uvs (ai:texture-coords m)
