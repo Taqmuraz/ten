@@ -27,16 +27,42 @@
           :bones (-> m ai:bones load-bones)
         )
       )
+      (load-tree (node)
+        (make-assoc
+          :meshes (ai:meshes node)
+          :matrix (ai:transform node)
+          :children (loop for c across (ai:children node) collect (load-tree c))
+        )
+      )
     )
     (lets (
         scene (-> file truename cffi-sys:native-namestring ai:import-into-lisp)
-        meshes (ai:meshes scene)
+        meshes (map 'vector #'load-submesh (ai:meshes scene))
+        tree (-> scene ai:root-node load-tree)
       )
-      (loop for m across meshes collect (load-submesh m))
+      (make-assoc
+        :meshes meshes
+        :tree tree
+      )
     )
   )
 )
 
 (defun display-model (model)
-  ()
+  (labels (
+    (display-tree (meshes tree)
+      (gl:with-pushed-matrix
+        (gl:mult-transpose-matrix (map-key tree :matrix))
+        (gl:with-primitives :triangles
+          (gl:color 1/2 1 1/2 1)
+          (loop for id across (map-key tree :meshes)
+            for mesh = (map-key meshes id)
+            for vs = (map-key mesh :verts)
+            do (loop for v across vs do (apply #'gl:vertex (coerce v 'list)))
+          )
+        )
+        (loop for c in (map-key tree :children) do (display-tree meshes c))
+      )
+    )
+  ) (display-tree (map-key model :meshes) (map-key model :tree)))
 )

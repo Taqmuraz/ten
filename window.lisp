@@ -18,7 +18,14 @@
 )
 
 (defmethod glut:display ((window window))
-  (gl:clear-color 1/2 1/2 1/2 1)
+  (gl:clear-color 0 0 0 1)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
+  (gl:matrix-mode :modelview)
+  (gl:load-identity)
+  (gl:with-pushed-matrix
+    (gl:translate 0 -1/2 0)
+    (gl:scale 1/5 1/5 1/5)
+    (-> window res (map-key :scene) display-model)
+  )
   (glut:swap-buffers)
 )
