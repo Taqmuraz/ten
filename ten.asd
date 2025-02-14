@@ -10,6 +10,6 @@
   :components (
     (:file "package")
     (:file "ten")
-    (:file "load")
+    (:file "model")
   )
 )
