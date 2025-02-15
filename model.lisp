@@ -1,6 +1,6 @@
 (in-package #:ten)
 
-(defun load-model-data (file)
+(defun load-model-data (file &key (textures-cache (hash)))
   (labels (
       (load-weights (ws)
         (loop for w across ws collect
@@ -18,10 +18,18 @@
           )
         )
       )
+      (load-texture (kind num file)
+        (with-vals
+          (alexandria:ensure-gethash file textures-cache
+            (-> file load-texture-data load-texture-to-gl)
+          )
+          :num num
+        )
+      )
       (load-material (mat)
         (make-assoc
           :color (map-key mat "$clr.diffuse")
-          :textures (mapcar #'rest (map-key mat "$tex.file"))
+          :textures (mapcar (mpart apply #'load-texture) (map-key mat "$tex.file"))
         )
       )
       (load-submesh (m)
@@ -70,8 +78,15 @@
               for mat-index = (map-key mesh :material)
               for mat = (map-key materials mat-index)
               for color = (map-key mat :color #(1 1 1 1))
+              for textures = (map-key mat :textures)
               do (progn
                 (apply #'gl:color (coerce color 'list))
+                (loop for tex in textures
+                  do (with-map-keys (gl-id num) tex
+                    ;(gl:bind-texture :texture-2d gl-id)
+                    ;(gl:active-texture :texture0)
+                  )
+                )
                 (loop for v across vs do (apply #'gl:vertex (coerce v 'list)))
               )
             )

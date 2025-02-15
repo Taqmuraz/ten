@@ -11,7 +11,9 @@
     #:classimp
     #:cl-opengl
     #:cl-glut
-    #:cl-glu #:cffi
+    #:cl-glu
+    #:cffi
+    #:cl-freeimage
     #:eager-future2
   )
   :components (
@@ -19,6 +21,7 @@
     (:file "ten")
     (:file "model")
     (:file "window")
+    (:file "texture")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"
