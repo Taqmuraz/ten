@@ -6,7 +6,7 @@
   :license  "Creative Commons Attribution-NonCommercial-NoDerivs 4.0 International"
   :version "0.0.1"
   :serial t
-  :depends-on (#:taclib #:classimp #:cl-opengl #:cl-glut #:cffi)
+  :depends-on (#:taclib #:classimp #:cl-opengl #:cl-glut #:cl-glu #:cffi)
   :components (
     (:file "package")
     (:file "ten")
