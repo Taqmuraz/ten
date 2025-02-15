@@ -76,6 +76,7 @@
             for vs = (map-key mesh :verts)
             for faces = (map-key mesh :indices)
             for uvs = (map-key mesh :uvs)
+            for ns = (map-key mesh :normals)
             for mat-index = (map-key mesh :material)
             for mat = (map-key materials mat-index)
             for color = (map-key mat :color #(1 1 1 1))
@@ -83,7 +84,7 @@
             do (progn
               (loop for tex in textures
                 do (with-map-keys (gl-id num) tex
-                  ;(gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
+                  (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
                   (gl:bind-texture :texture-2d gl-id)
                 )
               )
@@ -91,11 +92,13 @@
                 (apply #'gl:color (coerce color 'list))
                 (loop for f across faces do
                   (loop for i across f
-                    for v = (map-key vs i)
+                    for v = (coerce (map-key vs i) 'list)
                     for uv = (coerce (if uvs (map-key (map-key uvs 0) i)) 'list)
+                    for n = (coerce (map-key ns i) 'list)
                     do (progn
                       (when uv (apply #'gl:tex-coord uv))
-                      (apply #'gl:vertex (coerce v 'list))
+                      (apply #'gl:normal n)
+                      (apply #'gl:vertex v)
                     )
                   )
                 )

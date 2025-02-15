@@ -16,9 +16,10 @@
   (float (/ (get-internal-real-time) (float internal-time-units-per-second)))
 )
 
-(defmethod glut:display-window :before ((window window))
+(defmethod glut:display-window :after ((window window))
   (gl:polygon-mode :front :fill)
-  (gl:enable :depth-test)
+  (gl:enable :texture-2d :depth-test)
+  (gl:disable :color-material)
 )
 
 (defmethod glut:display ((window window))
