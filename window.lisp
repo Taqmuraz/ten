@@ -26,7 +26,7 @@
       w (glut:width window)
       h (glut:height window)
     )
-    (gl:clear-color 0 0 0 1)
+    (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
     (gl:matrix-mode :projection)
     (gl:load-identity)

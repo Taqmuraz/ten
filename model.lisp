@@ -60,28 +60,28 @@
 (defun display-model (model)
   (labels (
     (display-tree (meshes materials tree)
-      (gl:with-pushed-matrix
-        (gl:mult-transpose-matrix (map-key tree :matrix))
-        (gl:with-primitives :triangles
-          (loop for id across (map-key tree :meshes)
-            for mesh = (map-key meshes id)
-            for vs = (map-key mesh :verts)
-            for mat-index = (map-key mesh :material)
-            for mat = (map-key materials mat-index)
-            for color = (map-key mat :color #(1 1 1 1))
-            do (progn
-              (apply #'gl:color (coerce color 'list))
-              (loop for v across vs do (apply #'gl:vertex (coerce v 'list)))
+      (with-map-keys ((tmeshes :meshes) matrix) tree
+        (gl:with-pushed-matrix
+          (gl:mult-transpose-matrix matrix)
+          (gl:with-primitives :triangles
+            (loop for id across tmeshes
+              for mesh = (map-key meshes id)
+              for vs = (map-key mesh :verts)
+              for mat-index = (map-key mesh :material)
+              for mat = (map-key materials mat-index)
+              for color = (map-key mat :color #(1 1 1 1))
+              do (progn
+                (apply #'gl:color (coerce color 'list))
+                (loop for v across vs do (apply #'gl:vertex (coerce v 'list)))
+              )
             )
           )
+          (loop for c in (map-key tree :children) do (display-tree meshes materials c))
         )
-        (loop for c in (map-key tree :children) do (display-tree meshes materials c))
       )
     )
-  ) (display-tree
-      (map-key model :meshes)
-      (map-key model :materials)
-      (map-key model :tree)
+  ) (with-map-keys (meshes materials tree) model
+      (display-tree meshes materials tree)
     )
   )
 )

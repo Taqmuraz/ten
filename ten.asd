@@ -20,4 +20,7 @@
     (:file "model")
     (:file "window")
   )
+  :build-operation "program-op"
+  :build-pathname "ten-build"
+  :entry-point "ten:start-demo"
 )
