@@ -71,23 +71,34 @@
       (with-map-keys ((tmeshes :meshes) matrix) tree
         (gl:with-pushed-matrix
           (gl:mult-transpose-matrix matrix)
-          (gl:with-primitives :triangles
-            (loop for id across tmeshes
-              for mesh = (map-key meshes id)
-              for vs = (map-key mesh :verts)
-              for mat-index = (map-key mesh :material)
-              for mat = (map-key materials mat-index)
-              for color = (map-key mat :color #(1 1 1 1))
-              for textures = (map-key mat :textures)
-              do (progn
+          (loop for id across tmeshes
+            for mesh = (map-key meshes id)
+            for vs = (map-key mesh :verts)
+            for faces = (map-key mesh :indices)
+            for uvs = (map-key mesh :uvs)
+            for mat-index = (map-key mesh :material)
+            for mat = (map-key materials mat-index)
+            for color = (map-key mat :color #(1 1 1 1))
+            for textures = (map-key mat :textures)
+            do (progn
+              (loop for tex in textures
+                do (with-map-keys (gl-id num) tex
+                  ;(gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
+                  (gl:bind-texture :texture-2d gl-id)
+                )
+              )
+              (gl:with-primitives :triangles
                 (apply #'gl:color (coerce color 'list))
-                (loop for tex in textures
-                  do (with-map-keys (gl-id num) tex
-                    ;(gl:bind-texture :texture-2d gl-id)
-                    ;(gl:active-texture :texture0)
+                (loop for f across faces do
+                  (loop for i across f
+                    for v = (map-key vs i)
+                    for uv = (coerce (if uvs (map-key (map-key uvs 0) i)) 'list)
+                    do (progn
+                      (when uv (apply #'gl:tex-coord uv))
+                      (apply #'gl:vertex (coerce v 'list))
+                    )
                   )
                 )
-                (loop for v across vs do (apply #'gl:vertex (coerce v 'list)))
               )
             )
           )
