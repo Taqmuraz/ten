@@ -139,6 +139,7 @@
             for color = (map-key mat :color #(1 1 1 1))
             for textures = (map-key mat :textures)
             do (progn
+              (gl:bind-texture :texture-2d 0)
               (loop for tex in textures
                 do (with-map-keys (gl-id num) tex
                   (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
