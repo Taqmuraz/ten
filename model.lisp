@@ -172,23 +172,26 @@
   (labels (
       (display-tree (meshes materials tree)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (loop for i across tmeshes
-            for mesh = (map-key meshes i)
-            do (with-map-keys (gl-array gl-elements (mat :material)) mesh
-              (loop for tex in (map-key (map-key materials mat) :textures)
-                do (with-map-keys (gl-id num) tex
-                  (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
-                  (gl:bind-texture :texture-2d gl-id)
+          (gl:with-pushed-matrix
+            (gl:mult-transpose-matrix matrix)
+            (loop for i across tmeshes
+              for mesh = (map-key meshes i)
+              do (with-map-keys (gl-array gl-elements (mat :material)) mesh
+                (loop for tex in (map-key (map-key materials mat) :textures)
+                  do (with-map-keys (gl-id num) tex
+                    (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
+                    (gl:bind-texture :texture-2d gl-id)
+                  )
                 )
+                (gl:enable-client-state :vertex-array)
+                (gl:enable-client-state :texture-coord-array)
+                (gl:enable-client-state :normal-array)
+                (gl:bind-gl-vertex-array gl-array)
+                (gl:draw-elements :triangles gl-elements)
               )
-              (gl:enable-client-state :vertex-array)
-              (gl:enable-client-state :texture-coord-array)
-              (gl:enable-client-state :normal-array)
-              (gl:bind-gl-vertex-array gl-array)
-              (gl:draw-elements :triangles gl-elements)
             )
+            (loop for c in children do (display-tree meshes materials c))
           )
-          (loop for c in children do (display-tree meshes materials c))
         )
       )
     )
