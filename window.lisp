@@ -38,7 +38,7 @@
     (gl:with-pushed-matrix
       (gl:translate 0 -2 -4)
       (gl:rotate (* 45 (get-time)) 0 1 0)
-      (-> window res (map-key :scene) display-model)
+      (-> window res (map-key :gl-scene) display-gl-model)
     )
     (glut:swap-buffers)
   )
