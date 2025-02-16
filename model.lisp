@@ -181,6 +181,7 @@
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-elements (mat :material)) mesh
+                (gl:bind-texture :texture-2d 0)
                 (loop for tex in (map-key (map-key materials mat) :textures)
                   do (with-map-keys (gl-id num) tex
                     (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
