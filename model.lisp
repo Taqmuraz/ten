@@ -18,12 +18,16 @@
           )
         )
       )
-      (load-texture (kind num file)
-        (with-vals
-          (alexandria:ensure-gethash file textures-cache
-            (load-texture-data file)
+      (load-texture (kind num loc-file)
+        (lets (
+            abs-file (-> file file-parent (concat-path loc-file))
           )
-          :num num
+          (with-vals
+            (alexandria:ensure-gethash abs-file textures-cache
+              (load-texture-data abs-file)
+            )
+            :num num
+          )
         )
       )
       (load-material (mat)
