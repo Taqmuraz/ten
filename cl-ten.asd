@@ -1,6 +1,6 @@
 ;;;; ten.asd
 
-(asdf:defsystem #:ten
+(asdf:defsystem #:cl-ten
   :description "Graphics library for common lisp"
   :author "Taqmuraz <lusoftwaredev@gmail.com>"
   :license  "Creative Commons Attribution-NonCommercial-NoDerivs 4.0 International"
