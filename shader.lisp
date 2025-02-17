@@ -30,5 +30,5 @@
 
 (def-uniform :float (gl:uniformf loc value))
 (def-uniform :vec (gl:uniformfv loc value))
-(def-uniform :mat (gl:uniform-matrix loc 4 (vector value)))
-(def-uniform :mats (gl:uniform-matrix loc 4 (coerce value 'vector)))
+(def-uniform :mat (gl:uniform-matrix loc 4 (-> value mat-4x4->vec-16 vector)))
+(def-uniform :mats (gl:uniform-matrix loc 4 (map 'vector #'mat-4x4->vec-16 value)))

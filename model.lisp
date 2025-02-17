@@ -12,7 +12,7 @@
           (loop for b across bs collect
             (make-assoc
               :name (ai:name b)
-              :matrix (ai:offset-matrix b)
+              :matrix (-> b ai:offset-matrix load-matrix)
               :weights (-> b ai:weights load-weights)
             )
           )
@@ -46,10 +46,11 @@
           :bones (-> m ai:bones load-bones)
         )
       )
+      (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
       (load-tree (node)
         (make-assoc
           :meshes (ai:meshes node)
-          :matrix (ai:transform node)
+          :matrix (-> node ai:transform load-matrix)
           :children (loop for c across (ai:children node) collect (load-tree c))
         )
       )
@@ -134,7 +135,7 @@
     (display-tree (meshes materials tree)
       (with-map-keys ((tmeshes :meshes) matrix) tree
         (gl:with-pushed-matrix
-          (gl:mult-transpose-matrix matrix)
+          (-> matrix mat-4x4->vec-16 gl:mult-matrix)
           (loop for id across tmeshes
             for mesh = (map-key meshes id)
             for vs = (map-key mesh :verts)
@@ -184,13 +185,16 @@
   (labels (
       (display-tree (meshes materials tree)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (gl:with-pushed-matrix
-            (gl:mult-transpose-matrix matrix)
+          (with-stack-pmul matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-elements (mat :material)) mesh
                 (gl:bind-texture :texture-2d 0)
-                (-> mesh :shader :program gl:use-program)
+                (with-map-keys ((p :program)) (-> mesh :shader)
+                  (gl:use-program p)
+                  (load-uniform-mat p "transform" (stack-peek-matrix))
+                  (load-uniform-mat p "projection" (mat-identity 4))
+                )
                 (loop for tex in (map-key (map-key materials mat) :textures)
                   do (with-map-keys (gl-id num) tex
                     (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))

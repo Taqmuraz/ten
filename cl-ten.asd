@@ -24,6 +24,7 @@
     (:file "window")
     (:file "texture")
     (:file "shader")
+    (:file "state")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"

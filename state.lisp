@@ -1,0 +1,36 @@
+(in-package #:ten)
+
+(defparameter *matrix-stack* (list (mat-identity 4)))
+
+(defun stack-push-matrix ()
+  (push (car *matrix-stack*) *matrix-stack*)
+)
+
+(defun stack-pop-matrix ()
+  (pop *matrix-stack*)
+)
+
+(defun stack-peek-matrix ()
+  (car *matrix-stack*)
+)
+
+(defun stack-mul-matrix (m)
+  (setf (car *matrix-stack*) (mul-mat m (car *matrix-stack*)))
+)
+
+(defun stack-pmul (m)
+  (stack-push-matrix)
+  (stack-mul-matrix m)
+)
+
+(defmacro with-stack-pmul (m &body forms)
+  (lets (r (gensym))
+    `(let (,r) (progn
+      (stack-push-matrix)
+      (stack-mul-matrix ,m)
+      (setf ,r (progn ,@forms))
+      (stack-pop-matrix)
+      ,r
+    ))
+  )
+)
