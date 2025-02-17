@@ -16,15 +16,13 @@
   (float (/ (get-internal-real-time) (float internal-time-units-per-second)))
 )
 
-(defmethod glut:display-window :after ((window window))
+(defmethod glut:display-window :before ((window window))
   (gl:polygon-mode :front :fill)
   (gl:enable :texture-2d :depth-test)
   (gl:disable :color-material)
-  (setf (res window) (update (res window)
-      #'load-model-to-gl
-      :scene
-    )
-  )
+  (setf (res window)
+    (hash :scene
+      (-> window res (map-key :file) load-model-data load-model-to-gl)))
 )
 
 (defmethod glut:display ((window window))
