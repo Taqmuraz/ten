@@ -15,6 +15,7 @@
     #:cffi
     #:cl-freeimage
     #:eager-future2
+    #:uiop
   )
   :components (
     (:file "package")
@@ -22,6 +23,7 @@
     (:file "model")
     (:file "window")
     (:file "texture")
+    (:file "shader")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"

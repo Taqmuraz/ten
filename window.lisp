@@ -39,7 +39,7 @@
     (gl:matrix-mode :modelview)
     (gl:load-identity)
     (gl:with-pushed-matrix
-      (gl:translate 0 -2 -4)
+      (gl:translate 0 -2 -10)
       (gl:rotate (* 45 (get-time)) 0 1 0)
       (-> window res (map-key :scene) display-gl-model)
     )
