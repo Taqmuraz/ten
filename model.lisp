@@ -75,7 +75,7 @@
   (gl:normal :type :float :components (nx ny nz))
 )
 
-(defun load-model-to-gl (data)
+(defun load-model-to-gl (data &key (shaders-cache (hash)))
   (labels (
       (load-mesh-to-gl (m)
         (with-map-keys (verts uvs normals faces) m
@@ -107,7 +107,14 @@
                 )
               )
             )
-            (with-vals m :gl-array arr :gl-elements els)
+            (with-vals m
+              :gl-array arr
+              :gl-elements els
+              :shader (alexandria:ensure-gethash :diffuse shaders-cache (load-shader-to-gl
+                (uiop:read-file-string "res/shaders/vertex.glsl")
+                (uiop:read-file-string "res/shaders/fragment.glsl")
+              ))
+            )
           )
         )
       )
@@ -116,8 +123,8 @@
       )
     )
     (with-map-keys (meshes materials) data (with-vals data
-      :meshes (map 'vector #'load-mesh-to-gl meshes)
       :materials (map 'vector #'load-material-to-gl materials)
+      :meshes (map 'vector #'load-mesh-to-gl meshes)
     ))
   )
 )
@@ -183,6 +190,7 @@
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-elements (mat :material)) mesh
                 (gl:bind-texture :texture-2d 0)
+                (-> mesh :shader :program gl:use-program)
                 (loop for tex in (map-key (map-key materials mat) :textures)
                   do (with-map-keys (gl-id num) tex
                     (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
