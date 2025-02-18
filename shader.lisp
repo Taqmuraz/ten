@@ -2,7 +2,12 @@
 
 (defun load-shader-to-gl (vert-str frag-str)
   (labels (
-      (prepare (str) (format nil "#version 330~%~A" str))
+      (prepare (str) (format nil
+      "#version 330
+      #ifdef GL_ES
+      precision mediump float;
+      #endif
+      ~A" str))
     )
     (lets (
         vs (gl:create-shader :vertex-shader)

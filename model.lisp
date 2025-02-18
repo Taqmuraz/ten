@@ -185,7 +185,7 @@
   (labels (
       (display-tree (meshes materials tree)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (with-stack-pmul matrix
+          (with-stack-push matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-elements (mat :material)) mesh

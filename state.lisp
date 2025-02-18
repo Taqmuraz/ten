@@ -27,7 +27,7 @@
   (stack-mul-matrix m)
 )
 
-(defmacro with-stack-pmul (m &body forms)
+(defmacro with-stack-push (m &body forms)
   (lets (r (gensym))
     `(let (,r) (progn
       (stack-push-matrix)
