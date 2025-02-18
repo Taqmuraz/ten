@@ -1,1 +1,1 @@
-~/Desktop/programs/apitrace/bin/apitrace trace -o ten.trace /usr/bin/sbcl --script run.lisp
+~/Desktop/programs/apitrace/bin/apitrace trace -o ten.trace /usr/local/bin/sbcl --script run.lisp

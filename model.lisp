@@ -32,7 +32,7 @@
       )
       (load-material (mat)
         (make-assoc
-          :color (map-key mat "$clr.diffuse")
+          :color (merge-into 'vector (make-assoc 3 1) (map-key mat "$clr.diffuse"))
           :textures (mapcar (mpart apply #'load-texture) (map-key mat "$tex.file"))
         )
       )
