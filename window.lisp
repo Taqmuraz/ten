@@ -41,7 +41,10 @@
     (gl:with-pushed-matrix
       (gl:translate 0 -2 -10)
       (gl:rotate (* 45 (get-time)) 0 1 0)
-      (-> window res (map-key :scene) display-gl-model)
+      (set-proj-matrix (mat-perspective (/ w h) (/ pi 3) 1 1000))
+      (with-stack-pmul (mat-translation 0 -2 (-> #'get-time funcall sin (* 3)))
+        (-> window res (map-key :scene) display-gl-model)
+      )
     )
     (glut:swap-buffers)
   )

@@ -193,7 +193,7 @@
                 (with-map-keys ((p :program)) (-> mesh :shader)
                   (gl:use-program p)
                   (load-uniform-mat p "transform" (stack-peek-matrix))
-                  (load-uniform-mat p "projection" (mat-identity 4))
+                  (load-uniform-mat p "projection" (proj-matrix))
                 )
                 (loop for tex in (map-key (map-key materials mat) :textures)
                   do (with-map-keys (gl-id num) tex

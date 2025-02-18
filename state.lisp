@@ -1,6 +1,10 @@
 (in-package #:ten)
 
 (defparameter *matrix-stack* (list (mat-identity 4)))
+(defparameter *proj-matrix* (mat-identity 4))
+
+(defun set-proj-matrix (m) (setf *proj-matrix* m))
+(defun proj-matrix () *proj-matrix*)
 
 (defun stack-push-matrix ()
   (push (car *matrix-stack*) *matrix-stack*)
@@ -15,7 +19,7 @@
 )
 
 (defun stack-mul-matrix (m)
-  (setf (car *matrix-stack*) (mul-mat m (car *matrix-stack*)))
+  (setf (car *matrix-stack*) (mul-mat (car *matrix-stack*) m))
 )
 
 (defun stack-pmul (m)
