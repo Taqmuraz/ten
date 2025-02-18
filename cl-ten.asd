@@ -19,12 +19,12 @@
   )
   :components (
     (:file "package")
+    (:file "state")
     (:file "ten")
     (:file "model")
     (:file "window")
     (:file "texture")
     (:file "shader")
-    (:file "state")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"
