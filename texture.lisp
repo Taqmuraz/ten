@@ -22,3 +22,10 @@
     )
   )
 )
+
+(defun load-blank-texture ()
+  (cffi:with-foreign-pointer (p 4)
+    (dotimes (i 4) (setf (cffi:mem-aref p :uint8 i) 255))
+    (load-texture-to-gl (make-assoc :width 1 :height 1 :bits p :num 0))
+  )
+)

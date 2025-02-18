@@ -149,8 +149,15 @@
           )
         )
       )
+      (load-blank-for-empty-material (m)
+        (if (-> m :textures length zerop)
+          (with-vals m :textures (list (load-blank-texture)))
+          m
+        )
+      )
       (load-material-to-gl (m)
-        (update m (mpart mapcar #'load-texture-to-gl) :textures)
+        (load-blank-for-empty-material
+          (update m (mpart mapcar #'load-texture-to-gl) :textures))
       )
     )
     (with-map-keys (meshes materials) data (with-vals data
