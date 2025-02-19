@@ -29,6 +29,8 @@
   (lets (
       w (glut:width window)
       h (glut:height window)
+      proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
+      mat-stack (list (mat-identity 4))
     )
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
@@ -41,9 +43,11 @@
     (gl:with-pushed-matrix
       (gl:translate 0 -2 -10)
       (gl:rotate (* 45 (get-time)) 0 1 0)
-      (set-proj-matrix (mat-perspective (/ w h) (/ pi 3) 1 1000))
-      (with-stack-push (mat-translation 0 (-> #'get-time funcall sin (- 2)) 10)
-        (-> window res (map-key :scene) display-gl-model)
+      (with-stack-push mat-stack (mat-translation 0 (-> #'get-time funcall sin (- 2)) 10)
+        (-> window res (map-key :scene)
+          (display-gl-model
+            :mat-stack mat-stack
+            :proj-mat proj-mat))
       )
     )
     (glut:swap-buffers)

@@ -19,7 +19,7 @@
   )
   :components (
     (:file "package")
-    (:file "state")
+    (:file "stack")
     (:file "ten")
     (:file "model")
     (:file "window")

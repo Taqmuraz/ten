@@ -218,11 +218,12 @@
   )
 )
 
-(defun display-gl-model (gl-model)
+(defun display-gl-model (gl-model &key (mat-stack nil)
+                                       (proj-mat (mat-identity 4)))
   (labels (
-      (display-tree (meshes materials tree)
+      (display-tree (meshes materials tree mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (with-stack-push matrix
+          (with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-count (mat :material)) mesh
@@ -232,8 +233,8 @@
                   (with-map-keys (color) (map-key materials mat)
                     (load-uniform-vec p "color" color)
                   )
-                  (load-uniform-mat p "transform" (stack-peek-matrix))
-                  (load-uniform-mat p "projection" (proj-matrix))
+                  (load-uniform-mat p "transform" (car mat-stack))
+                  (load-uniform-mat p "projection" proj-mat)
                 )
                 (loop for tex in (map-key (map-key materials mat) :textures)
                   do (with-map-keys (gl-id num) tex
@@ -248,13 +249,13 @@
                 (gl:draw-elements :triangles (gl:make-null-gl-array :unsigned-short) :count gl-count)
               )
             )
-            (loop for c in children do (display-tree meshes materials c))
+            (loop for c in children do (display-tree meshes materials c mat-stack))
           )
         )
       )
     )
     (with-map-keys (meshes materials tree) gl-model
-      (display-tree meshes materials tree)
+      (display-tree meshes materials tree mat-stack)
     )
   )
 )
