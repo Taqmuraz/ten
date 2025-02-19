@@ -8,5 +8,5 @@ uniform vec4 color;
 
 void main (void)
 {	
-	out_Color = texture(texture2d, uv) * color;
+	out_Color = texture(texture2d, vec2(uv.x, 1 - uv.y)) * color;
 }
