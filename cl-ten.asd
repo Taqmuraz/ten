@@ -16,6 +16,7 @@
     #:cl-freeimage
     #:eager-future2
     #:uiop
+    #:rtg-math
   )
   :components (
     (:file "package")

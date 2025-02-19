@@ -89,8 +89,34 @@
         (gl:enable-vertex-attrib-array ind)
         (gl:vertex-attrib-pointer ind dim :float nil 0 (cffi:null-pointer))
       )
+      (load-joint-weights (bones inds)
+        (when bones
+          (lets (
+              bones (coerce bones 'vector)
+              l (length inds)
+              ws (make-array l :initial-element nil)
+            )
+            (loop for bi from 0 below (length bones) for b = (map-key bones bi) do
+              (loop for (i w) in (-> b :weights) do
+                (push (cons bi w) (aref ws i))
+              )
+            )
+            ws
+          )
+        )
+      )
+      (compress-weights (w)
+        (lets (
+            w (sort w (sfun (x y) > (cdr x) (cdr y)))
+            s (last-> w (mapcar #'cdr) (apply #'+))
+            emp (make-array 4 :initial-element (cons -1 0))
+            w (merge-into 'vector emp (take w 4 'vector))
+          )
+          (map 'vector (sfun x cons (car x) (/ (cdr x) s)) w)
+        )
+      )
       (load-mesh-to-gl (m)
-        (with-map-keys (verts uvs normals faces) m
+        (with-map-keys (verts uvs normals faces bones) m
           (lets (
               inds (apply #'concatenate 'vector (coerce faces 'list))
               l (length inds)
@@ -133,9 +159,33 @@
             (load-buffer norm-buf :array-buffer ns)
             (load-buffer elt-buf :element-array-buffer els)
             (gl:bind-vertex-array arr)
+            (when bones
+              (lets (
+                  ws (map 'vector #'compress-weights (load-joint-weights bones inds))
+                  ws-arr (gl:alloc-gl-array :float (* 4 l))
+                  js-arr (gl:alloc-gl-array :float (* 4 l))
+                  bufs (gl:gen-buffers 2)
+                  ws-buf (first bufs)
+                  js-buf (second bufs)
+                )
+                (loop for i from 0 below (length ws) for row = (aref ws i) do
+                  (loop for wi from 0 below 4
+                    for addr = (+ wi (* 4 i))
+                    for w = (aref row wi)
+                    do
+                    (setf (gl:glaref ws-arr addr) (cdr w))
+                    (setf (gl:glaref js-arr addr) (coerce (car w) 'single-float))
+                  )
+                )
+                (load-buffer ws-buf :array-buffer ws-arr)
+                (load-buffer js-buf :array-buffer js-arr)
+                (load-attrib-array js-buf :array-buffer 3 4)
+                (load-attrib-array ws-buf :array-buffer 4 4)
+              )
+            )
             (load-attrib-array vert-buf :array-buffer 0 3)
             (load-attrib-array uv-buf :array-buffer 1 2)
-            (load-attrib-array norm-buf :array-buffer 3 3)
+            (load-attrib-array norm-buf :array-buffer 2 3)
             (gl:bind-buffer :element-array-buffer elt-buf)
             (gl:bind-vertex-array 0)
             (with-vals m
