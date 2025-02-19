@@ -11,7 +11,7 @@
         (when bs
           (loop for b across bs collect
             (make-assoc
-              :name (ai:name b)
+              :name (-> b ai:name keyword-of)
               :matrix (-> b ai:offset-matrix load-matrix)
               :weights (-> b ai:weights load-weights)
             )
@@ -49,6 +49,7 @@
       (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
       (load-tree (node)
         (make-assoc
+          :name (-> node ai:name keyword-of)
           :meshes (ai:meshes node)
           :matrix (-> node ai:transform load-matrix)
           :children (loop for c across (ai:children node) collect (load-tree c))
@@ -76,7 +77,7 @@
   (gl:normal :type :float :components (nx ny nz))
 )
 
-(defun load-model-to-gl (data &key (shaders-cache (hash)))
+(defun load-model-to-gl (data shaders)
   (labels (
       (load-buffer (buf kind data)
         (gl:bind-buffer kind buf)
@@ -191,10 +192,7 @@
             (with-vals m
               :gl-array arr
               :gl-count l
-              :shader (alexandria:ensure-gethash :diffuse shaders-cache (load-shader-to-gl
-                (uiop:read-file-string "res/shaders/vertex.glsl")
-                (uiop:read-file-string "res/shaders/fragment.glsl")
-              ))
+              :shader (map-key shaders (if bones :skin :static))
             )
           )
         )
@@ -209,10 +207,20 @@
         (load-blank-for-empty-material
           (update m (mpart mapcar #'load-texture-to-gl) :textures))
       )
+      (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
+        (with-map-keys (name matrix children) tree
+          (lets (mat (mul-mat-4x4 parent matrix))
+            (setf (gethash name pose) mat)
+            (loop for c in children do (load-pose c mat pose))
+          )
+        )
+        pose
+      )
     )
-    (with-map-keys (meshes materials) data (with-vals data
+    (with-map-keys (meshes materials tree) data (with-vals data
       :materials (map 'vector #'load-material-to-gl materials)
       :meshes (map 'vector #'load-mesh-to-gl meshes)
+      :pose (load-pose tree)
     ))
   )
 )
@@ -271,17 +279,26 @@
 (defun display-gl-model (gl-model &key (mat-stack nil)
                                        (proj-mat (mat-identity 4)))
   (labels (
-      (display-tree (meshes materials tree mat-stack)
+      (display-tree (meshes materials tree pose mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
           (with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
-              do (with-map-keys (gl-array gl-count (mat :material)) mesh
+              do (with-map-keys (gl-array gl-count (mat :material) bones) mesh
                 (gl:bind-texture :texture-2d 0)
                 (with-map-keys ((p :program)) (-> mesh :shader)
                   (gl:use-program p)
                   (with-map-keys (color) (map-key materials mat)
                     (load-uniform-vec p "color" color)
+                  )
+                  (when bones
+                    (lets (
+                        bs (mapcar (sfun b last-> b :matrix) bones)
+                        ns (mapcar (sfun b -> b :name) bones)
+                        ts (mapcar (sfun (n m) mul-mat-4x4 (map-key pose n) m) ns bs)
+                      )
+                      (load-uniform-mats p "jointTransforms" ts)
+                    )
                   )
                   (load-uniform-mat p "transform" (car mat-stack))
                   (load-uniform-mat p "projection" proj-mat)
@@ -299,13 +316,13 @@
                 (gl:draw-elements :triangles (gl:make-null-gl-array :unsigned-short) :count gl-count)
               )
             )
-            (loop for c in children do (display-tree meshes materials c mat-stack))
+            (loop for c in children do (display-tree meshes materials c pose mat-stack))
           )
         )
       )
     )
-    (with-map-keys (meshes materials tree) gl-model
-      (display-tree meshes materials tree mat-stack)
+    (with-map-keys (meshes materials tree pose) gl-model
+      (display-tree meshes materials tree pose mat-stack)
     )
   )
 )

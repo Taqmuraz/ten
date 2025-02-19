@@ -20,9 +20,23 @@
   (gl:polygon-mode :front :fill)
   (gl:enable :texture-2d :depth-test)
   (gl:disable :color-material)
-  (setf (res window)
-    (hash :scene
-      (-> window res (map-key :file) load-model-data load-model-to-gl)))
+  (lets (
+      shaders (hash
+        :static (load-shader-to-gl
+          (uiop:read-file-string "res/shaders/vertex.glsl")
+          (uiop:read-file-string "res/shaders/fragment.glsl")
+        )
+        :skin (load-shader-to-gl
+          (uiop:read-file-string "res/shaders/skin_vertex.glsl")
+          (uiop:read-file-string "res/shaders/fragment.glsl")
+        )
+      )
+    )
+    (setf (res window)
+      (hash :scene
+        (-> window res (map-key :file) load-model-data
+          (load-model-to-gl shaders))))
+  )
 )
 
 (defmethod glut:display ((window window))
