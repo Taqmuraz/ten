@@ -55,17 +55,46 @@
           :children (loop for c across (ai:children node) collect (load-tree c))
         )
       )
+      (load-anim-frame (pos rot scale)
+        (lets (
+            pos (apply #'mat-translation (coerce pos 'list))
+            rot (-> rot rtg-math.quaternions:to-mat4 vec-16->mat-4x4)
+            scale (apply #'mat-scale-4x4 (coerce scale 'list))
+          )
+          (mul-mats-4x4 pos rot scale)
+        )
+      )
+      (load-bone-anim (ch)
+        (lets (
+            name (-> ch ai:node-name keyword-of)
+            ps (last-> ch ai:position-keys (map 'list #'ai:value))
+            rs (last-> ch ai:rotation-keys (map 'list #'ai:value))
+            ss (last-> ch ai:scaling-keys (map 'list #'ai:value))
+            fs (map 'vector #'load-anim-frame ps rs ss)
+          )
+          (cons name fs)
+        )
+      )
+      (load-anim (anim)
+        (lets (
+            chs (-> anim ai:channels)
+          )
+          (cons (ai:name anim) (map 'list #'load-bone-anim chs))
+        )
+      )
     )
     (lets (
         scene (-> file truename cffi-sys:native-namestring ai:import-into-lisp)
         meshes (map 'vector #'load-submesh (ai:meshes scene))
         materials (map 'vector #'load-material (ai:materials scene))
         tree (-> scene ai:root-node load-tree)
+        anims (last-> scene ai:animations (map 'list #'load-anim))
       )
       (make-assoc
         :meshes meshes
         :materials materials
         :tree tree
+        :anims anims
       )
     )
   )
