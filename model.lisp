@@ -76,10 +76,17 @@
         )
       )
       (replace-tree (tree map)
-        (with-vals tree
-          :matrix (last-> tree :name (map-key map))
-          :children (loop for c in (map-key tree :children) collect
-            (replace-tree c map))
+        (with-map-keys (name matrix children) tree
+          (lets (
+              p (map-key map name)
+              m (if p p matrix)
+            )
+            (with-vals tree
+              :matrix m
+              :children (loop for c in children collect
+                (replace-tree c map))
+            )
+          )
         )
       )
       (load-anim (tree default-pose anim)
@@ -89,7 +96,7 @@
             l (-> as first cdr length)
             trees (loop for i from 0 below l
               for fs = (assoc->hash (update-vals as (sfun a map-key a i)))
-              collect (replace-tree tree (merge-into 'hash-table default-pose fs))
+              collect (replace-tree tree fs)
             )
             frames (map 'vector #'load-pose trees)
           )
