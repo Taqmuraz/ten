@@ -89,7 +89,7 @@
           )
         )
       )
-      (load-anim (tree default-pose anim)
+      (load-anim (tree anim)
         (lets (
             chs (-> anim ai:channels)
             as (map 'list #'load-bone-anim chs)
@@ -119,7 +119,7 @@
         materials (map 'vector #'load-material (ai:materials scene))
         tree (-> scene ai:root-node load-tree)
         pose (load-pose tree)
-        anims (last-> scene ai:animations (map 'list (mpart load-anim tree pose)))
+        anims (last-> scene ai:animations (map 'list (mpart load-anim tree)))
       )
       (make-assoc
         :meshes meshes
