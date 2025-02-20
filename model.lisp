@@ -347,7 +347,7 @@
       )
       (display-tree (meshes materials tree pose mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (with-stack-push mat-stack matrix
+          (progn;with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-count (mat :material) bones) mesh
@@ -386,8 +386,8 @@
       )
     )
     (with-map-keys (meshes materials tree (tpose :pose)) gl-model
-      (display-bones tree tpose #(0 1 0 1))
-      (when pose (display-bones tree (merge-into 'hash-table tpose pose) #(1 0 0 1)))
+      ;(display-bones tree tpose #(0 1 0 1))
+      ;(when pose (display-bones tree (merge-into 'hash-table tpose pose) #(1 0 0 1)))
       (display-tree meshes materials tree (merge-into 'hash-table tpose pose) mat-stack)
     )
   )
