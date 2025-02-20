@@ -322,6 +322,22 @@
                                        (proj-mat (mat-identity 4))
                                        (pose nil))
   (labels (
+      (display-bone (bone pose)
+        (applyv #'gl:vertex (transform-point-4x4
+          (map-key pose (-> bone :name)) #(0 0 0)))
+      )
+      (display-bones (tree pose color)
+        (with-map-keys (children) tree
+          (gl:with-primitives :lines
+            (applyv #'gl:color color)
+            (loop for c in children do
+              (display-bone tree pose)
+              (display-bone c pose)
+            )
+          )
+          (loop for c in children do (display-bones c pose color))
+        )
+      )
       (display-tree (meshes materials tree pose mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
           (with-stack-push mat-stack matrix
@@ -354,6 +370,7 @@
                 )
                 (gl:bind-vertex-array gl-array)
                 (gl:draw-elements :triangles (gl:make-null-gl-array :unsigned-short) :count gl-count)
+                (gl:use-program 0)
               )
             )
             (loop for c in children do (display-tree meshes materials c pose mat-stack))
@@ -362,6 +379,8 @@
       )
     )
     (with-map-keys (meshes materials tree (tpose :pose)) gl-model
+      (display-bones tree tpose #(0 1 0 1))
+      (when pose (display-bones tree (merge-into 'hash-table tpose pose) #(1 0 0 1)))
       (display-tree meshes materials tree (merge-into 'hash-table tpose pose) mat-stack)
     )
   )

@@ -44,7 +44,7 @@
       h (glut:height window)
       time (get-time)
       proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-      mat-stack (list (mat-translation 0 (- (sin time) 3) 10))
+      mat-stack (list (mat-translation 0 0 10))
       rot-mat (classic-matrix
         (0 0 1 0)
         (0 1 0 0)
@@ -63,8 +63,8 @@
     (gl:matrix-mode :modelview)
     (gl:load-identity)
     (gl:with-pushed-matrix
-      (gl:translate 0 -2 -10)
-      (gl:rotate (* 45 time) 0 1 0)
+      (gl:translate 0 0 -10)
+      (gl:rotate 90 0 1 0)
       (with-stack-push mat-stack rot-mat
         (-> window res :scene
           (display-gl-model
