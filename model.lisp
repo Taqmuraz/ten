@@ -75,12 +75,35 @@
           (cons name fs)
         )
       )
-      (load-anim (anim)
+      (replace-tree (tree map)
+        (with-vals tree
+          :matrix (last-> tree :name (map-key map))
+          :children (loop for c in (map-key tree :children) collect
+            (replace-tree c map))
+        )
+      )
+      (load-anim (tree default-pose anim)
         (lets (
             chs (-> anim ai:channels)
+            as (map 'list #'load-bone-anim chs)
+            l (-> as first cdr length)
+            trees (loop for i from 0 below l
+              for fs = (assoc->hash (update-vals as (sfun a map-key a i)))
+              collect (replace-tree tree (merge-into 'hash-table default-pose fs))
+            )
+            frames (map 'vector #'load-pose trees)
           )
-          (cons (ai:name anim) (map 'list #'load-bone-anim chs))
+          (cons (-> anim ai:name keyword-of) frames)
         )
+      )
+      (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
+        (with-map-keys (name matrix children) tree
+          (lets (mat (mul-mat-4x4 parent matrix))
+            (setf (gethash name pose) mat)
+            (loop for c in children do (load-pose c mat pose))
+          )
+        )
+        pose
       )
     )
     (lets (
@@ -88,22 +111,22 @@
         meshes (map 'vector #'load-submesh (ai:meshes scene))
         materials (map 'vector #'load-material (ai:materials scene))
         tree (-> scene ai:root-node load-tree)
-        anims (last-> scene ai:animations (map 'list #'load-anim))
+        pose (load-pose tree)
+        anims (last-> scene ai:animations (map 'list (mpart load-anim tree pose)))
       )
       (make-assoc
         :meshes meshes
         :materials materials
         :tree tree
+        :pose pose
         :anims anims
       )
     )
   )
 )
 
-(gl:define-gl-array-format gl-model-vertex
-  (gl:vertex :type :float :components (x y z))
-  (gl:tex-coord :type :float :components (tx ty))
-  (gl:normal :type :float :components (nx ny nz))
+(defun animate (anim time)
+  (map-key anim (floor (mod (* 120 time) (length anim))))
 )
 
 (defun load-model-to-gl (data shaders)
@@ -236,20 +259,10 @@
         (load-blank-for-empty-material
           (update m (mpart mapcar #'load-texture-to-gl) :textures))
       )
-      (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
-        (with-map-keys (name matrix children) tree
-          (lets (mat (mul-mat-4x4 parent matrix))
-            (setf (gethash name pose) mat)
-            (loop for c in children do (load-pose c mat pose))
-          )
-        )
-        pose
-      )
     )
-    (with-map-keys (meshes materials tree) data (with-vals data
+    (with-map-keys (meshes materials) data (with-vals data
       :materials (map 'vector #'load-material-to-gl materials)
       :meshes (map 'vector #'load-mesh-to-gl meshes)
-      :pose (load-pose tree)
     ))
   )
 )
@@ -306,7 +319,8 @@
 )
 
 (defun display-gl-model (gl-model &key (mat-stack nil)
-                                       (proj-mat (mat-identity 4)))
+                                       (proj-mat (mat-identity 4))
+                                       (pose nil))
   (labels (
       (display-tree (meshes materials tree pose mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
@@ -338,9 +352,6 @@
                     (gl:bind-texture :texture-2d gl-id)
                   )
                 )
-                ;(gl:enable-client-state :vertex-array)
-                ;(gl:enable-client-state :texture-coord-array)
-                ;(gl:enable-client-state :normal-array)
                 (gl:bind-vertex-array gl-array)
                 (gl:draw-elements :triangles (gl:make-null-gl-array :unsigned-short) :count gl-count)
               )
@@ -350,8 +361,8 @@
         )
       )
     )
-    (with-map-keys (meshes materials tree pose) gl-model
-      (display-tree meshes materials tree pose mat-stack)
+    (with-map-keys (meshes materials tree (tpose :pose)) gl-model
+      (display-tree meshes materials tree (merge-into 'hash-table tpose pose) mat-stack)
     )
   )
 )

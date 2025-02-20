@@ -31,11 +31,10 @@
           (uiop:read-file-string "res/shaders/fragment.glsl")
         )
       )
+      model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders))
+      anim (-> model :anims :|Armature|)
     )
-    (setf (res window)
-      (hash :scene
-        (-> window res (map-key :file) load-model-data
-          (load-model-to-gl shaders))))
+    (setf (res window) (hash :scene model :anim anim))
   )
 )
 
@@ -43,14 +42,17 @@
   (lets (
       w (glut:width window)
       h (glut:height window)
+      time (get-time)
       proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-      mat-stack (list (mat-translation 0 (-> #'get-time funcall sin (- 3)) 10))
+      mat-stack (list (mat-translation 0 (- (sin time) 3) 10))
       rot-mat (classic-matrix
         (0 0 1 0)
         (0 1 0 0)
         (-1 0 0 0)
         (0 0 0 1)
       )
+      scene (-> window res :scene)
+      anim (-> window res :anim (animate time))
     )
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
@@ -62,12 +64,13 @@
     (gl:load-identity)
     (gl:with-pushed-matrix
       (gl:translate 0 -2 -10)
-      (gl:rotate (* 45 (get-time)) 0 1 0)
+      (gl:rotate (* 45 time) 0 1 0)
       (with-stack-push mat-stack rot-mat
-        (-> window res (map-key :scene)
+        (-> window res :scene
           (display-gl-model
             :mat-stack mat-stack
-            :proj-mat proj-mat))
+            :proj-mat proj-mat
+            :pose anim))
       )
     )
     (glut:swap-buffers)
