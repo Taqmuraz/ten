@@ -32,7 +32,7 @@
         )
       )
       model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders))
-      anim (-> model :anims :|Armature|)
+      anim (-> model :anims vals first)
     )
     (setf (res window) (hash :scene model :anim anim))
   )
