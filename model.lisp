@@ -336,9 +336,9 @@
           (loop for c in children do (display-bones c pose color))
         )
       )
-      (display-tree (meshes materials tree pose mat-stack)
+      (display-tree (meshes materials tree pose mat-stack root)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (progn;with-stack-push mat-stack matrix
+          (with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-count (mat :material) bones) mesh
@@ -357,7 +357,7 @@
                       (load-uniform-mats p "jointTransforms" ts)
                     )
                   )
-                  (load-uniform-mat p "transform" (car mat-stack))
+                  (load-uniform-mat p "transform" (if bones root (car mat-stack)))
                   (load-uniform-mat p "projection" proj-mat)
                 )
                 (loop for tex in (map-key (map-key materials mat) :textures)
@@ -371,7 +371,7 @@
                 (gl:use-program 0)
               )
             )
-            (loop for c in children do (display-tree meshes materials c pose mat-stack))
+            (loop for c in children do (display-tree meshes materials c pose mat-stack root))
           )
         )
       )
@@ -379,7 +379,11 @@
     (with-map-keys (meshes materials tree (tpose :pose)) gl-model
       ;(display-bones tree tpose #(0 1 0 1))
       ;(when pose (display-bones tree (merge-into 'hash-table tpose pose) #(1 0 0 1)))
-      (display-tree meshes materials tree (merge-into 'hash-table tpose pose) mat-stack)
+      (display-tree meshes materials tree
+        (merge-into 'hash-table tpose pose)
+        mat-stack
+        (car mat-stack)
+      )
     )
   )
 )
