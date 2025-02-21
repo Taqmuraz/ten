@@ -2,138 +2,138 @@
 
 (defun load-model-data (file &key (textures-cache (hash)))
   (labels (
-      (load-weights (ws)
-        (loop for w across ws collect
-          (list (ai:id w) (ai:weight w))
-        )
-      )
-      (load-bones (bs)
-        (when bs
-          (loop for b across bs collect
-            (make-assoc
-              :name (-> b ai:name keyword-of)
-              :matrix (-> b ai:offset-matrix load-matrix)
-              :weights (-> b ai:weights load-weights)
-            )
-          )
-        )
-      )
-      (load-texture (kind num loc-file)
-        (lets (
-            abs-file (-> file file-parent (concat-path loc-file))
-          )
-          (with-vals
-            (alexandria:ensure-gethash abs-file textures-cache
-              (load-texture-data abs-file)
-            )
-            :num num
-          )
-        )
-      )
-      (load-material (mat)
-        (make-assoc
-          :color (merge-into 'vector (make-assoc 3 1) (map-key mat "$clr.diffuse"))
-          :textures (mapcar (mpart apply #'load-texture) (map-key mat "$tex.file"))
-        )
-      )
-      (load-submesh (m)
-        (make-assoc
-          :verts (ai:vertices m)
-          :normals (ai:normals m)
-          :uvs (ai:texture-coords m)
-          :faces (ai:faces m)
-          :material (ai:material-index m)
-          :bones (-> m ai:bones load-bones)
-        )
-      )
-      (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
-      (load-tree (node)
-        (make-assoc
-          :name (-> node ai:name keyword-of)
-          :meshes (ai:meshes node)
-          :matrix (-> node ai:transform load-matrix)
-          :children (loop for c across (ai:children node) collect (load-tree c))
-        )
-      )
-      (load-anim-frame (pos rot scale)
-        (lets (
-            pos (apply #'mat-translation (coerce pos 'list))
-            rot (-> rot rtg-math.quaternions:to-mat4 vec-16->mat-4x4)
-            scale (apply #'mat-scale-4x4 (coerce scale 'list))
-          )
-          (mul-mats-4x4 pos rot scale)
-        )
-      )
-      (load-bone-anim (ch)
-        (lets (
-            name (-> ch ai:node-name keyword-of)
-            ps (last-> ch ai:position-keys (map 'list #'ai:value))
-            rs (last-> ch ai:rotation-keys (map 'list #'ai:value))
-            ss (last-> ch ai:scaling-keys (map 'list #'ai:value))
-            fs (map 'vector #'load-anim-frame ps rs ss)
-          )
-          (cons name fs)
-        )
-      )
-      (replace-tree (tree map)
-        (with-map-keys (name matrix children) tree
-          (lets (
-              p (map-key map name)
-              m (if p p matrix)
-            )
-            (with-vals tree
-              :matrix m
-              :children (loop for c in children collect
-                (replace-tree c map))
-            )
-          )
-        )
-      )
-      (load-anim (tree anim)
-        (lets (
-            chs (-> anim ai:channels)
-            as (map 'list #'load-bone-anim chs)
-            l (-> as first cdr length)
-            trees (loop for i from 0 below l
-              for fs = (assoc->hash (update-vals as (sfun a map-key a i)))
-              collect (replace-tree tree fs)
-            )
-            frames (map 'vector #'load-pose trees)
-          )
-          (cons (-> anim ai:name keyword-of) frames)
-        )
-      )
-      (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
-        (with-map-keys (name matrix children) tree
-          (lets (mat (mul-mat-4x4 parent matrix))
-            (setf (gethash name pose) mat)
-            (loop for c in children do (load-pose c mat pose))
-          )
-        )
-        pose
-      )
-    )
-    (lets (
-        scene (-> file truename cffi-sys:native-namestring ai:import-into-lisp)
-        meshes (map 'vector #'load-submesh (ai:meshes scene))
-        materials (map 'vector #'load-material (ai:materials scene))
-        tree (-> scene ai:root-node load-tree)
-        pose (load-pose tree)
-        anims (last-> scene ai:animations (map 'list (mpart load-anim tree)))
-      )
-      (make-assoc
-        :meshes meshes
-        :materials materials
-        :tree tree
-        :pose pose
-        :anims anims
-      )
-    )
+	   (load-weights (ws)
+			 (loop for w across ws collect
+			       (list (ai:id w) (ai:weight w))
+			       )
+			 )
+	   (load-bones (bs)
+		       (when bs
+			 (loop for b across bs collect
+			       (make-assoc
+				:name (-> b ai:name keyword-of)
+				:matrix (-> b ai:offset-matrix load-matrix)
+				:weights (-> b ai:weights load-weights)
+				)
+			       )
+			 )
+		       )
+	   (load-texture (kind num loc-file)
+			 (lets (
+				abs-file (-> file file-parent (concat-path loc-file))
+				)
+			       (with-vals
+				(alexandria:ensure-gethash abs-file textures-cache
+							   (load-texture-data abs-file)
+							   )
+				:num num
+				)
+			       )
+			 )
+	   (load-material (mat)
+			  (make-assoc
+			   :color (merge-into 'vector (make-assoc 3 1) (map-key mat "$clr.diffuse"))
+			   :textures (mapcar (mpart apply #'load-texture) (map-key mat "$tex.file"))
+			   )
+			  )
+	   (load-submesh (m)
+			 (make-assoc
+			  :verts (ai:vertices m)
+			  :normals (ai:normals m)
+			  :uvs (ai:texture-coords m)
+			  :faces (ai:faces m)
+			  :material (ai:material-index m)
+			  :bones (-> m ai:bones load-bones)
+			  )
+			 )
+	   (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
+	   (load-tree (node)
+		      (make-assoc
+		       :name (-> node ai:name keyword-of)
+		       :meshes (ai:meshes node)
+		       :matrix (-> node ai:transform load-matrix)
+		       :children (loop for c across (ai:children node) collect (load-tree c))
+		       )
+		      )
+	   (load-anim-frame (pos rot scale)
+			    (lets (
+				   pos (apply #'mat-translation (coerce pos 'list))
+				   rot (-> rot rtg-math.quaternions:to-mat4 vec-16->mat-4x4)
+				   scale (apply #'mat-scale-4x4 (coerce scale 'list))
+				   )
+				  (mul-mats-4x4 pos rot scale)
+				  )
+			    )
+	   (load-bone-anim (ch)
+			   (lets (
+				  name (-> ch ai:node-name keyword-of)
+				  ps (last-> ch ai:position-keys (map 'list #'ai:value))
+				  rs (last-> ch ai:rotation-keys (map 'list #'ai:value))
+				  ss (last-> ch ai:scaling-keys (map 'list #'ai:value))
+				  fs (map 'vector #'load-anim-frame ps rs ss)
+				  )
+				 (cons name fs)
+				 )
+			   )
+	   (replace-tree (tree map)
+			 (with-map-keys (name matrix children) tree
+					(lets (
+					       p (map-key map name)
+					       m (if p p matrix)
+					       )
+					      (with-vals tree
+							 :matrix m
+							 :children (loop for c in children collect
+									 (replace-tree c map))
+							 )
+					      )
+					)
+			 )
+	   (load-anim (tree anim)
+		      (lets (
+			     chs (-> anim ai:channels)
+			     as (map 'list #'load-bone-anim chs)
+			     l (-> as first cdr length)
+			     trees (loop for i from 0 below l
+					 for fs = (assoc->hash (update-vals as (sfun a map-key a i)))
+					 collect (replace-tree tree fs)
+					 )
+			     frames (map 'vector #'load-pose trees)
+			     )
+			    (cons (-> anim ai:name keyword-of) frames)
+			    )
+		      )
+	   (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
+		      (with-map-keys (name matrix children) tree
+				     (lets (mat (mul-mat-4x4 parent matrix))
+					   (setf (gethash name pose) mat)
+					   (loop for c in children do (load-pose c mat pose))
+					   )
+				     )
+		      pose
+		      )
+	   )
+	  (lets (
+		 scene (-> file truename cffi-sys:native-namestring ai:import-into-lisp)
+		 meshes (map 'vector #'load-submesh (ai:meshes scene))
+		 materials (map 'vector #'load-material (ai:materials scene))
+		 tree (-> scene ai:root-node load-tree)
+		 pose (load-pose tree)
+		 anims (last-> scene ai:animations (map 'list (mpart load-anim tree)))
+		 )
+		(make-assoc
+		 :meshes meshes
+		 :materials materials
+		 :tree tree
+		 :pose pose
+		 :anims anims
+		 )
+		)
+	  )
   )
-)
 
 (defun animate (anim time)
-  (when anim (map-key anim (floor (mod (* 120 time) (length anim)))))
+  (map-key anim (floor (mod (* 120 time) (length anim))))
 )
 
 (defun load-model-to-gl (data shaders)
