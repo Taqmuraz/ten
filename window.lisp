@@ -51,7 +51,6 @@
         (-1 0 0 0)
         (0 0 0 1)
       )
-      rot-mat (mul-mat-4x4 rot-mat (mat-scale-4x4 1 1 1))
       scene (-> window res :scene)
       anim (-> window res :anim (animate time))
     )
@@ -66,7 +65,6 @@
     (gl:with-pushed-matrix
       (gl:translate 1 -1 -5)
       (gl:rotate -90 0 1 0)
-      ;(gl:scale 1/80 1/80 1/80)
       (with-stack-push mat-stack rot-mat
         (-> window res :scene
           (pipe
