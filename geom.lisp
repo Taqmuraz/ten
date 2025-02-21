@@ -4,7 +4,6 @@
   (loop for f across faces append
     (lets (
         v (coerce f 'vector)
-        tp (type-of f)
         l (length v)
       )
       (cases l
