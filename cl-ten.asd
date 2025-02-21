@@ -26,6 +26,7 @@
     (:file "window")
     (:file "texture")
     (:file "shader")
+    (:file "geom")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"

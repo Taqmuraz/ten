@@ -41,7 +41,7 @@
           :verts (ai:vertices m)
           :normals (ai:normals m)
           :uvs (ai:texture-coords m)
-          :faces (ai:faces m)
+          :faces (-> m ai:faces triangulate)
           :material (ai:material-index m)
           :bones (-> m ai:bones load-bones)
         )
@@ -169,6 +169,7 @@
         (lets (
             w (sort w (sfun (x y) > (cdr x) (cdr y)))
             s (last-> w (mapcar #'cdr) (apply #'+))
+            s (if (zerop s) 1.0 s)
             emp (make-array 4 :initial-element (cons -1 0))
             w (merge-into 'vector emp (take w 4 'vector))
           )
