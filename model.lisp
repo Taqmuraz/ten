@@ -43,7 +43,7 @@
           :uvs (ai:texture-coords m)
           :faces (-> m ai:faces triangulate)
           :material (ai:material-index m)
-          ;:bones (-> m ai:bones load-bones)
+          :bones (-> m ai:bones load-bones)
         )
       )
       (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
@@ -149,12 +149,11 @@
         (gl:enable-vertex-attrib-array ind)
         (gl:vertex-attrib-pointer ind dim :float nil 0 (cffi:null-pointer))
       )
-      (load-joint-weights (bones inds)
+      (load-joint-weights (bones count)
         (when bones
           (lets (
               bones (coerce bones 'vector)
-              l (length inds)
-              ws (make-array l :initial-element nil)
+              ws (make-array count :initial-element nil)
             )
             (loop for bi from 0 below (length bones) for b = (map-key bones bi) do
               (loop for (i w) in (-> b :weights) do
@@ -212,7 +211,8 @@
             (gl:bind-vertex-array arr)
             (when bones
               (lets (
-                  ws (map 'vector #'compress-weights (load-joint-weights bones inds))
+                  ws (map 'vector #'compress-weights
+                    (load-joint-weights bones l))
                   ws-arr (gl:alloc-gl-array :float (* 4 l))
                   js-arr (gl:alloc-gl-array :float (* 4 l))
                   bufs (gl:gen-buffers 2)
@@ -338,7 +338,7 @@
       )
       (display-tree (meshes materials tree pose mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (with-stack-push mat-stack matrix
+          (progn;with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-count (mat :material) bones) mesh
