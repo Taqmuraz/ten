@@ -202,7 +202,7 @@
             )
             (fill-buffer faces els 3)
             (fill-buffer verts vs 3)
-            (when uvs-0 (fill-buffer uvs-0 uv 2))
+            (when uvs-0 (fill-buffer uvs-0 us 2))
             (fill-buffer normals ns 3)
             (load-buffer vert-buf :array-buffer vs)
             (load-buffer uv-buf :array-buffer us)
