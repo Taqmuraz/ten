@@ -44,13 +44,14 @@
       h (glut:height window)
       time (get-time)
       proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-      mat-stack (list (mat-translation 0 0 10))
+      mat-stack (list (mat-translation -1 -2 5))
       rot-mat (classic-matrix
         (0 0 1 0)
         (0 1 0 0)
         (-1 0 0 0)
         (0 0 0 1)
       )
+      rot-mat (mul-mat-4x4 rot-mat (mat-scale-4x4 1/80 1/80 1/80))
       scene (-> window res :scene)
       anim (-> window res :anim (animate time))
     )
@@ -63,14 +64,17 @@
     (gl:matrix-mode :modelview)
     (gl:load-identity)
     (gl:with-pushed-matrix
-      (gl:translate 0 0 -10)
-      (gl:rotate 90 0 1 0)
+      (gl:translate 1 -2 -5)
+      (gl:rotate -90 0 1 0)
+      (gl:scale 1/80 1/80 1/80)
       (with-stack-push mat-stack rot-mat
         (-> window res :scene
-          (display-gl-model
-            :mat-stack mat-stack
-            :proj-mat proj-mat
-            :pose anim))
+          (pipe
+            display-model
+            (display-gl-model
+              :mat-stack mat-stack
+              :proj-mat proj-mat
+              :pose nil)))
       )
     )
     (glut:swap-buffers)

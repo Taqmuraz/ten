@@ -43,7 +43,7 @@
           :uvs (ai:texture-coords m)
           :faces (-> m ai:faces triangulate)
           :material (ai:material-index m)
-          :bones (-> m ai:bones load-bones)
+          ;:bones (-> m ai:bones load-bones)
         )
       )
       (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
@@ -176,11 +176,19 @@
           (map 'vector (sfun x cons (car x) (/ (cdr x) s)) w)
         )
       )
+      (fill-buffer (src dst dim)
+        (loop for i from 0 below (length src)
+          for e = (aref src i)
+          do (loop for j from 0 below dim
+            do (setf (gl:glaref dst (+ j (* i dim))) (aref e j))
+          )
+        )
+      )
       (load-mesh-to-gl (m)
         (with-map-keys (verts uvs normals faces bones) m
           (lets (
               inds (apply #'concatenate 'vector (coerce faces 'list))
-              l (length inds)
+              l (length verts)
               vs (gl:alloc-gl-array :float (* 3 l))
               us (gl:alloc-gl-array :float (* 2 l))
               ns (gl:alloc-gl-array :float (* 3 l))
@@ -191,30 +199,12 @@
               norm-buf (elt buffers 2)
               elt-buf (elt buffers 3)
               arr (gl:gen-vertex-array)
+              uvs-0 (map-key uvs 0)
             )
-            (loop for i across inds do
-              (progn
-                (setf (gl:glaref els i) i)
-                (with-map-keys ((x 0) (y 1) (z 2)) (map-key verts i)
-                  (setf (gl:glaref vs (* 3 i)) x)
-                  (setf (gl:glaref vs (+ 1 (* 3 i))) y)
-                  (setf (gl:glaref vs (+ 2 (* 3 i))) z)
-                )
-                (when (/= (length uvs) 0)
-                  (with-map-keys ((x 0) (y 1)) (map-key (map-key uvs 0) i)
-                    (when (and x y)
-                      (setf (gl:glaref us (* 2 i)) x)
-                      (setf (gl:glaref us (+ 1 (* 2 i))) y)
-                    )
-                  )
-                )
-                (with-map-keys ((x 0) (y 1) (z 2)) (map-key normals i)
-                  (setf (gl:glaref ns (* 3 i)) x)
-                  (setf (gl:glaref ns (+ 1 (* 3 i))) y)
-                  (setf (gl:glaref ns (+ 2 (* 3 i))) z)
-                )
-              )
-            )
+            (fill-buffer faces els 3)
+            (fill-buffer verts vs 3)
+            (when uvs-0 (fill-buffer uvs-0 uv 2))
+            (fill-buffer normals ns 3)
             (load-buffer vert-buf :array-buffer vs)
             (load-buffer uv-buf :array-buffer us)
             (load-buffer norm-buf :array-buffer ns)
@@ -251,7 +241,7 @@
             (gl:bind-vertex-array 0)
             (with-vals m
               :gl-array arr
-              :gl-count l
+              :gl-count (length inds)
               :shader (map-key shaders (if bones :skin :static))
             )
           )
@@ -348,7 +338,7 @@
       )
       (display-tree (meshes materials tree pose mat-stack)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (progn;with-stack-push mat-stack matrix
+          (with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
               do (with-map-keys (gl-array gl-count (mat :material) bones) mesh
