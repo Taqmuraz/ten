@@ -51,6 +51,7 @@
         (-1 0 0 0)
         (0 0 0 1)
       )
+      rot-mat (mat-identity 4)
       scene (-> window res :scene)
       anim (-> window res :anim (animate time))
     )
@@ -68,7 +69,7 @@
       (with-stack-push mat-stack rot-mat
         (-> window res :scene
           (pipe
-            display-model
+            ;display-model
             (display-gl-model
               :mat-stack mat-stack
               :proj-mat proj-mat

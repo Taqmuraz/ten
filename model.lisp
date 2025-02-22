@@ -38,7 +38,7 @@
       )
       (load-submesh (m)
         (make-assoc
-          :verts (ai:vertices m)
+          :verts (map 'vector (sfun v select-keys v 0 2 1) (ai:vertices m))
           :normals (ai:normals m)
           :uvs (ai:texture-coords m)
           :faces (-> m ai:faces triangulate)
@@ -46,7 +46,19 @@
           :bones (-> m ai:bones load-bones)
         )
       )
-      (load-matrix (m) (-> m vec-16->mat-4x4 transponed))
+      (flip-matrix-yz (m)
+        (lets (
+            flip (classic-matrix
+              (1 0 0 0)
+              (0 0 1 0)
+              (0 1 0 0)
+              (0 0 0 1)
+            )
+          )
+          (mul-mats-4x4 flip m flip)
+        )
+      )
+      (load-matrix (m) (-> m vec-16->mat-4x4 transponed flip-matrix-yz))
       (load-tree (node)
         (make-assoc
           :name (-> node ai:name keyword-of)
@@ -61,7 +73,7 @@
             rot (-> rot rtg-math.quaternions:to-mat4 vec-16->mat-4x4)
             scale (apply #'mat-scale-4x4 (coerce scale 'list))
           )
-          (mul-mats-4x4 pos rot scale)
+          (flip-matrix-yz (mul-mats-4x4 pos rot scale))
         )
       )
       (load-bone-anim (ch)
