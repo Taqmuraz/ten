@@ -77,15 +77,28 @@
           (flip-matrix-yz (mul-mats-4x4 pos rot scale))
         )
       )
+      (load-bone-anim-key (k)
+        (cons (ai:key-time k) (ai:value k))
+      )
+      (load-bone-anim-keys (keys)
+        (lets (
+            tree (assoc->tree (map 'list #'load-bone-anim-key keys) #'< #'=)
+          )
+          (sfun key -> (find-bounds tree key #'<) car cdr)
+        )
+      )
       (load-bone-anim (ch)
         (lets (
             name (-> ch ai:node-name keyword-of)
-            ps (last-> ch ai:position-keys (map 'list #'ai:value))
-            rs (last-> ch ai:rotation-keys (map 'list #'ai:value))
-            ss (last-> ch ai:scaling-keys (map 'list #'ai:value))
-            fs (map 'vector #'load-anim-frame ps rs ss)
+            ps (-> ch ai:position-keys load-bone-anim-keys)
+            rs (-> ch ai:rotation-keys load-bone-anim-keys)
+            ss (-> ch ai:scaling-keys load-bone-anim-keys)
+            func (sfun key load-anim-frame
+              (funcall ps key)
+              (funcall rs key)
+              (funcall ss key))
           )
-          (cons name fs)
+          (cons name func)
         )
       )
       (replace-tree (tree map)
@@ -106,14 +119,14 @@
         (lets (
             chs (-> anim ai:channels)
             as (map 'list #'load-bone-anim chs)
-            l (-> as first cdr length)
-            trees (loop for i from 0 below l
-              for fs = (assoc->hash (update-vals as (sfun a map-key a i)))
-              collect (replace-tree tree fs)
+            func (sfun key last->
+              (update-vals as (sfun a funcall a key))
+              (replace-tree tree)
+              load-pose
             )
-            frames (map 'vector #'load-pose trees)
+            len (ai:duration anim)
           )
-          (cons (-> anim ai:name keyword-of) frames)
+          (cons (-> anim ai:name keyword-of) (make-assoc :length len :map func))
         )
       )
       (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
@@ -152,8 +165,10 @@
 )
 
 (defun animate (anim time)
-  (when anim (map-key anim (floor (mod (* 120 time) (length anim)))))
-)
+  (when anim
+    (map-key
+      (-> anim :map)
+      (mod time (-> anim :length)))))
 
 (defun load-model-to-gl (data shaders)
   (labels (
