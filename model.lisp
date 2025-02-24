@@ -26,6 +26,7 @@
             (alexandria:ensure-gethash abs-file textures-cache
               (load-texture-data abs-file)
             )
+            :source abs-file
             :num num
           )
         )
@@ -124,12 +125,18 @@
         )
         pose
       )
+      (rotate-root (tree x y z)
+        (update tree
+          (sfun m mul-mat-4x4 m (mat-rotation x y z))
+          :matrix
+        )
+      )
     )
     (lets (
         scene (-> file truename cffi-sys:native-namestring ai:import-into-lisp)
         meshes (map 'vector #'load-submesh (ai:meshes scene))
         materials (map 'vector #'load-material (ai:materials scene))
-        tree (-> scene ai:root-node load-tree)
+        tree (-> scene ai:root-node load-tree (rotate-root (* pi -1/2) 0 0))
         pose (load-pose tree)
         anims (last-> scene ai:animations (map 'list (mpart load-anim tree)))
       )
