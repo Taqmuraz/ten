@@ -125,8 +125,13 @@
               load-pose
             )
             len (ai:duration anim)
+            bones (keys as)
           )
-          (cons (-> anim ai:name keyword-of) (make-assoc :length len :map func))
+          (cons (-> anim ai:name keyword-of)
+            (make-assoc
+              :length len
+              :map func
+              :bones bones))
         )
       )
       (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
@@ -169,6 +174,32 @@
     (map-key
       (-> anim :map)
       (mod time (-> anim :length)))))
+
+(defun cache-anim (anim frames-count)
+  (when anim
+    (labels (
+        (cache-pose (pose bones)
+          (typecase pose
+            (function (apply #'func->hash pose bones))
+            (hash-table pose)
+            (t (error (format nil "Unsupported pose kind : ~A~%" pose)))
+          )
+        )
+      )
+      (lets (
+          len (-> anim :length)
+          map (-> anim :map)
+          bones (-> anim :bones)
+          keys (loop for i from 0 below frames-count collect (* len (/ i frames-count)))
+          poses (mapcar (sfun k cons k (cache-pose (map-key map k) bones)) keys)
+          poses (assoc->tree poses #'< #'=)
+          func (sfun k -> (find-bounds poses k #'<) car cdr)
+        )
+        (with-vals anim :map func)
+      )
+    )
+  )
+)
 
 (defun load-model-to-gl (data shaders)
   (labels (

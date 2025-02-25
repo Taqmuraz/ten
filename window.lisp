@@ -16,6 +16,19 @@
   (float (/ (get-internal-real-time) (float internal-time-units-per-second)))
 )
 
+(defparameter *fps* 0)
+(defparameter *last-fps-sec* 0)
+(defparameter *last-fps* 0)
+(defun fps ()
+  (lets (s (floor (get-time)))
+    (if (= *last-fps-sec* s)
+      (progn (incf *fps* 1) *last-fps*)
+      (progn
+        (setf *last-fps* *fps*)
+        (setf *last-fps-sec* s)
+        (setf *fps* 1)
+        *last-fps*))))
+
 (defmethod glut:display-window :before ((window window))
   (gl:polygon-mode :front :fill)
   (gl:enable :texture-2d :depth-test)
@@ -32,13 +45,14 @@
         )
       )
       model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders))
-      anim (-> model :anims vals first)
+      anim (-> model :anims vals first (cache-anim 120))
     )
     (setf (res window) (hash :scene model :anim anim))
   )
 )
 
 (defmethod glut:display ((window window))
+  (setf (glut:title window) (format nil "ten, fps = ~A" (fps)))
   (lets (
       w (glut:width window)
       h (glut:height window)
