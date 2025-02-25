@@ -61,7 +61,7 @@
       mat-stack (list (mat-translation -1 -1 5))
       rot-mat (mat-rotation 0 pi 0)
       scene (-> window res :scene)
-      anim (-> window res :anim (animate time))
+      anim (-> window res :anim)
     )
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
@@ -74,7 +74,7 @@
     (gl:with-pushed-matrix
       (gl:translate 1 -1 -5)
       (gl:rotate -90 0 1 0)
-      (loop for i from 0 below 100
+      (loop for i from 0 below 200
         for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
         (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
           (-> window res :scene
@@ -83,7 +83,7 @@
               (display-gl-model
                 :mat-stack mat-stack
                 :proj-mat proj-mat
-                :pose anim)))))
+                :pose (animate anim time))))))
     )
     (glut:swap-buffers)
   )
