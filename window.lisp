@@ -45,7 +45,7 @@
         )
       )
       model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders))
-      anim (-> model :anims vals first (cache-anim 120))
+      anim (-> model :gl-anims vals first)
     )
     (setf (res window) (hash :scene model :anim anim))
   )
@@ -83,7 +83,7 @@
               (display-gl-model
                 :mat-stack mat-stack
                 :proj-mat proj-mat
-                :pose (animate anim time))))))
+                :gl-pose (animate anim time))))))
     )
     (glut:swap-buffers)
   )

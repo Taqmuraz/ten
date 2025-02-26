@@ -11,6 +11,7 @@ uniform mat4 projection;
 
 const int MAX_TRANSFORMS = 100;
 uniform mat4 jointTransforms[MAX_TRANSFORMS];
+uniform mat4 jointOffsets[MAX_TRANSFORMS];
 
 void main (void)
 {
@@ -22,8 +23,9 @@ void main (void)
 		int j = int(joints[i]);
 		if (j != -1)
 		{
-			totalPos += (transform * jointTransforms[j] * vec4(position, 1)).xyz * weights[i];
-			totalNormal += (transform * jointTransforms[j] * vec4(normal, 0)).xyz * weights[i];
+		  mat4 t = jointTransforms[j] * jointOffsets[j];
+			totalPos += (transform * t * vec4(position, 1)).xyz * weights[i];
+			totalNormal += (transform * t * vec4(normal, 0)).xyz * weights[i];
 		}
 	}
 	

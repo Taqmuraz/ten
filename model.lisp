@@ -175,7 +175,7 @@
       (-> anim :map)
       (mod time (-> anim :length)))))
 
-(defun cache-anim (anim frames-count)
+(defun cache-anim (anim frames-count &key posefun)
   (when anim
     (labels (
         (cache-pose (pose bones)
@@ -187,11 +187,13 @@
         )
       )
       (lets (
+          posef (if posefun posefun #'identity)
           len (-> anim :length)
           map (-> anim :map)
           bones (-> anim :bones)
           keys (loop for i from 0 below frames-count collect (* len (/ i frames-count)))
           poses (mapcar (sfun k cons k (cache-pose (map-key map k) bones)) keys)
+          poses (update-vals poses posef)
           poses (assoc->tree poses #'< #'=)
           func (sfun k -> (find-bounds poses k #'<) car cdr)
         )
@@ -200,6 +202,12 @@
     )
   )
 )
+
+(defun mat-to-gl (mat) (-> mat transponed mat-4x4->vec-16))
+
+(defun pose-to-gl (pose) (update-vals pose #'mat-to-gl))
+
+(defun anim-to-gl (anim) (cache-anim anim 120 :posefun #'pose-to-gl))
 
 (defun load-model-to-gl (data shaders)
   (labels (
@@ -307,6 +315,7 @@
             (with-vals m
               :gl-array arr
               :gl-count (length inds)
+              :gl-bones (update-vals bones (sfun b update b #'mat-to-gl :matrix))
               :shader (map-key shaders (if bones :skin :static))
             )
           )
@@ -323,9 +332,11 @@
           (update m (mpart mapcar #'load-texture-to-gl) :textures))
       )
     )
-    (with-map-keys (meshes materials) data (with-vals data
+    (with-map-keys (meshes materials anims pose) data (with-vals data
       :materials (map 'vector #'load-material-to-gl materials)
       :meshes (map 'vector #'load-mesh-to-gl meshes)
+      :gl-pose (pose-to-gl pose)
+      :gl-anims (update-vals anims #'anim-to-gl)
     ))
   )
 )
@@ -383,46 +394,30 @@
 
 (defun display-gl-model (gl-model &key (mat-stack nil)
                                        (proj-mat (mat-identity 4))
-                                       (pose nil))
+                                       (gl-pose nil))
   (labels (
-      (display-bone (bone pose)
-        (applyv #'gl:vertex (transform-point-4x4
-          (map-key pose (-> bone :name)) #(0 0 0)))
-      )
-      (display-bones (tree pose color)
-        (with-map-keys (children) tree
-          (gl:with-primitives :lines
-            (applyv #'gl:color color)
-            (loop for c in children do
-              (display-bone tree pose)
-              (display-bone c pose)
-            )
-          )
-          (loop for c in children do (display-bones c pose color))
-        )
-      )
-      (display-tree (meshes materials tree pose mat-stack root)
+      (display-tree (meshes materials tree gl-pose mat-stack root)
         (with-map-keys ((tmeshes :meshes) matrix children) tree
           (with-stack-push mat-stack matrix
             (loop for i across tmeshes
               for mesh = (map-key meshes i)
-              do (with-map-keys (gl-array gl-count (mat :material) bones) mesh
+              do (with-map-keys (gl-array gl-count (mat :material) gl-bones) mesh
                 (gl:bind-texture :texture-2d 0)
                 (with-map-keys ((p :program)) (-> mesh :shader)
                   (gl:use-program p)
                   (with-map-keys (color) (map-key materials mat)
                     (load-uniform-vec p "color" color)
                   )
-                  (when bones
+                  (when gl-bones
                     (lets (
-                        bs (mapcar (sfun b last-> b :matrix) bones)
-                        ns (mapcar (sfun b -> b :name) bones)
-                        ts (mapcar (sfun (n m) mul-mat-4x4 (map-key pose n) m) ns bs)
+                        bs (mapcar (sfun b last-> b :matrix) gl-bones)
+                        ts (mapcar (sfun b last-> b :name (map-key gl-pose)) gl-bones)
                       )
-                      (load-uniform-mats p "jointTransforms" ts)
+                      (load-uniform-mats-vec-16 p "jointTransforms" ts)
+                      (load-uniform-mats-vec-16 p "jointOffsets" bs)
                     )
                   )
-                  (load-uniform-mat p "transform" (if bones root (car mat-stack)))
+                  (load-uniform-mat p "transform" (if gl-bones root (car mat-stack)))
                   (load-uniform-mat p "projection" proj-mat)
                 )
                 (loop for tex in (map-key (map-key materials mat) :textures)
@@ -436,16 +431,14 @@
                 (gl:use-program 0)
               )
             )
-            (loop for c in children do (display-tree meshes materials c pose mat-stack root))
+            (loop for c in children do (display-tree meshes materials c gl-pose mat-stack root))
           )
         )
       )
     )
-    (with-map-keys (meshes materials tree (tpose :pose)) gl-model
-      ;(display-bones tree tpose #(0 1 0 1))
-      ;(when pose (display-bones tree (merge-into 'hash-table tpose pose) #(1 0 0 1)))
+    (with-map-keys (meshes materials tree (tpose :gl-pose)) gl-model
       (display-tree meshes materials tree
-        (merge-into 'hash-table tpose pose)
+        (merge-into 'hash-table tpose gl-pose)
         mat-stack
         (car mat-stack)
       )
