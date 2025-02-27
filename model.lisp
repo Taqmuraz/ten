@@ -391,7 +391,7 @@
   )
 )
 
-(defun collect-instances (tree pose meshes materials)
+(defun collect-gl-instances (tree pose meshes materials)
   (with-map-keys ((mnums :meshes) matrix children name) tree
     (lets (
         mat (map-key pose name)
@@ -401,11 +401,69 @@
                   (make-hash
                     :mesh m
                     :material (map-key materials (map-key mesh :material))
-                    :bones (mapcar (sfun b map-key b :name) (map-key mesh :bones))
+                    :shader (map-key mesh :shader)
+                    :bones (mapcar (sfun b select-keys b :name :matrix) (map-key mesh :gl-bones))
                     :matrix mat)) mnums))
-        chs (loop for c in children append (collect-instances c pose meshes materials))
+        chs (loop for c in children append (collect-gl-instances c pose meshes materials))
       )
       (append own chs)
+    )
+  )
+)
+
+(defun display-gl-instances (instances meshes pose proj root)
+  (lets (
+      sg (hash->assoc (group-by instances (sfun i -> i :shader)))
+      gl-root (mat-to-gl root)
+    )
+    (loop for (program . instances) in sg
+      for p = (-> program :program) do
+      (gl:use-program p)
+      (gl:bind-texture :texture-2d 0)
+      (load-uniform-mat p "projection" proj)
+      (lets (
+          bg (hash->assoc (group-by instances (sfun i -> i :bones)))
+        )
+        (loop for (bones . instances) in bg do
+          (when bones
+            (lets (
+                ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
+                os (map 'vector (sfun b map-key b :matrix) bones)
+              )
+              (load-uniform-mats-vec-16 p "jointTransforms" ts)
+              (load-uniform-mats-vec-16 p "jointOffsets" os)
+            )
+          )
+          (lets (
+              mg (hash->assoc (group-by instances (sfun i -> i :material)))
+            )
+            (loop for (material . instances) in mg do
+              (lets (
+                  color (-> material :color)
+                  texs (-> material :textures)
+                )
+                (loop for tex in texs do
+                  (gl:active-texture (+
+                    (cffi:foreign-enum-value '%gl:enum :texture0)
+                    (-> tex :num)))
+                  (gl:bind-texture :texture-2d (-> tex :gl-id))
+                )
+                (load-uniform-vec p "color" color)
+              )
+              (loop for instance in instances do
+                (load-uniform-mat-vec-16 p "transform" (if bones gl-root (-> instance :matrix)))
+                (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
+                  (gl:bind-vertex-array gl-array)
+                  (gl:draw-elements :triangles
+                    (gl:make-null-gl-array :unsigned-short) :count gl-count) 
+                )
+              )
+            )
+          )
+        )
+      )
+      (gl:bind-texture :texture-2d 0)
+      (gl:use-program 0)
     )
   )
 )
@@ -413,7 +471,14 @@
 (defun display-gl-model (gl-model &key (mat-stack nil)
                                        (proj-mat (mat-identity 4))
                                        (gl-pose nil))
-  (with-map-keys (tree pose meshes materials) gl-model
-    (collect-instances tree (merge-into 'hash-table pose gl-pose) meshes materials)
+  (with-map-keys (tree (tpose :gl-pose) meshes materials) gl-model
+    (lets (
+        pose (merge-into 'hash-table tpose gl-pose)
+        is (collect-gl-instances tree pose meshes materials)
+        root (or (car mat-stack) (mat-identity 4))
+      )
+      is
+      (display-gl-instances is meshes pose proj-mat root)
+    )
   )
 )
