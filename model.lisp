@@ -403,6 +403,7 @@
                     :material (map-key materials (map-key mesh :material))
                     :shader (map-key mesh :shader)
                     :bones (mapcar (sfun b select-keys b :name :matrix) (map-key mesh :gl-bones))
+                    :bone-names (mapcar (sfun b -> b :name) (map-key mesh :bones))
                     :matrix mat)) mnums))
         chs (loop for c in children append (collect-gl-instances c pose meshes materials))
       )
@@ -422,9 +423,11 @@
       (gl:bind-texture :texture-2d 0)
       (load-uniform-mat p "projection" proj)
       (lets (
-          bg (hash->assoc (group-by instances (sfun i -> i :bones)))
+          bg (hash->assoc (group-by instances (sfun i -> i :bone-names)))
         )
-        (loop for (bones . instances) in bg do
+        (loop for (bone-names . instances) in bg
+          for bones = (map-key (car instances) :bones)
+          do
           (when bones
             (lets (
                 ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
