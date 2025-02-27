@@ -391,56 +391,29 @@
   )
 )
 
+(defun collect-instances (tree pose meshes materials)
+  (with-map-keys ((mnums :meshes) matrix children name) tree
+    (lets (
+        mat (map-key pose name)
+        own (if (-> mnums length zerop not)
+              (map 'list
+                (sfun m lets (mesh (map-key meshes m))
+                  (make-hash
+                    :mesh m
+                    :material (map-key materials (map-key mesh :material))
+                    :bones (mapcar (sfun b map-key b :name) (map-key mesh :bones))
+                    :matrix mat)) mnums))
+        chs (loop for c in children append (collect-instances c pose meshes materials))
+      )
+      (append own chs)
+    )
+  )
+)
+
 (defun display-gl-model (gl-model &key (mat-stack nil)
                                        (proj-mat (mat-identity 4))
                                        (gl-pose nil))
-  (labels (
-      (display-tree (meshes materials tree gl-pose mat-stack root)
-        (with-map-keys ((tmeshes :meshes) matrix children) tree
-          (with-stack-push mat-stack matrix
-            (loop for i across tmeshes
-              for mesh = (map-key meshes i)
-              do (with-map-keys (gl-array gl-count (mat :material) gl-bones) mesh
-                (gl:bind-texture :texture-2d 0)
-                (with-map-keys ((p :program)) (-> mesh :shader)
-                  (gl:use-program p)
-                  (with-map-keys (color) (map-key materials mat)
-                    (load-uniform-vec p "color" color)
-                  )
-                  (when gl-bones
-                    (lets (
-                        bs (mapcar (sfun b last-> b :matrix) gl-bones)
-                        ts (mapcar (sfun b last-> b :name (map-key gl-pose)) gl-bones)
-                      )
-                      (load-uniform-mats-vec-16 p "jointTransforms" ts)
-                      (load-uniform-mats-vec-16 p "jointOffsets" bs)
-                    )
-                  )
-                  (load-uniform-mat p "transform" (if gl-bones root (car mat-stack)))
-                  (load-uniform-mat p "projection" proj-mat)
-                )
-                (loop for tex in (map-key (map-key materials mat) :textures)
-                  do (with-map-keys (gl-id num) tex
-                    (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
-                    (gl:bind-texture :texture-2d gl-id)
-                  )
-                )
-                (gl:bind-vertex-array gl-array)
-                (gl:draw-elements :triangles (gl:make-null-gl-array :unsigned-short) :count gl-count)
-                (gl:use-program 0)
-              )
-            )
-            (loop for c in children do (display-tree meshes materials c gl-pose mat-stack root))
-          )
-        )
-      )
-    )
-    (with-map-keys (meshes materials tree (tpose :gl-pose)) gl-model
-      (display-tree meshes materials tree
-        (merge-into 'hash-table tpose gl-pose)
-        mat-stack
-        (car mat-stack)
-      )
-    )
+  (with-map-keys (tree pose meshes materials) gl-model
+    (collect-instances tree (merge-into 'hash-table pose gl-pose) meshes materials)
   )
 )
