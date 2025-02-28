@@ -28,6 +28,11 @@ void main (void)
 			totalNormal += (transform * t * vec4(normal, 0)).xyz * weights[i];
 		}
 	}
+	int i = gl_InstanceID;
+	float x = int(i - floor(i / 10) * 10) - 9;
+	float z = int(i / 10);
+	float y = int(i / 20);
+	totalPos += vec3(x, y, z);
 	
 	gl_Position = projection * vec4(totalPos, 1);
 	uv = texcoord;

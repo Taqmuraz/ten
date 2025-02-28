@@ -459,7 +459,7 @@
                 (load-uniform-mat-vec-16 p "transform" (if bones gl-root (-> instance :matrix)))
                 (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
                   (gl:bind-vertex-array gl-array)
-                  (gl:draw-arrays :triangles 0 gl-count) 
+                  (gl:draw-arrays-instanced :triangles 0 gl-count 10000) 
                 )
               )
             )
