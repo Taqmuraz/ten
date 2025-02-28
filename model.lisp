@@ -256,14 +256,22 @@
           )
         )
       )
+      (make-buffer (src els dim)
+        (lets (
+            l (length els)
+            dst (gl:alloc-gl-array :float (* dim l))
+          )
+          (when src (fill-buffer (map 'vector (sfun i aref src i) els) dst dim))
+          dst
+        )
+      )
       (load-mesh-to-gl (m)
         (with-map-keys (verts uvs normals faces bones) m
           (lets (
               inds (apply #'concatenate 'vector (coerce faces 'list))
-              l (length verts)
-              vs (gl:alloc-gl-array :float (* 3 l))
-              us (gl:alloc-gl-array :float (* 2 l))
-              ns (gl:alloc-gl-array :float (* 3 l))
+              vs (make-buffer verts inds 3)
+              us (make-buffer uvs inds 2)
+              ns (make-buffer normals inds 3)
               els (gl:alloc-gl-array :unsigned-short (length inds))
               buffers (gl:gen-buffers 4)
               vert-buf (elt buffers 0)
@@ -272,10 +280,9 @@
               elt-buf (elt buffers 3)
               arr (gl:gen-vertex-array)
             )
-            (fill-buffer faces els 3)
-            (fill-buffer verts vs 3)
-            (when uvs (fill-buffer uvs us 2))
-            (fill-buffer normals ns 3)
+            (loop for i from 0 below (length inds) do
+              (setf (gl:glaref els i) i)
+            )
             (load-buffer vert-buf :array-buffer vs)
             (load-buffer uv-buf :array-buffer us)
             (load-buffer norm-buf :array-buffer ns)
@@ -283,22 +290,17 @@
             (gl:bind-vertex-array arr)
             (when bones
               (lets (
-                  ws (map 'vector #'compress-weights
-                    (load-joint-weights bones l))
-                  ws-arr (gl:alloc-gl-array :float (* 4 l))
-                  js-arr (gl:alloc-gl-array :float (* 4 l))
+                  wjs (map 'vector #'compress-weights
+                    (load-joint-weights bones (length verts)))
+                  js (map 'vector (mpart map 'vector
+                    (sfun j -> j car (coerce 'single-float))) wjs)
+                  ws (map 'vector (mpart map 'vector
+                    (sfun w -> w cdr (coerce 'single-float))) wjs)
+                  ws-arr (make-buffer ws inds 4)
+                  js-arr (make-buffer js inds 4)
                   bufs (gl:gen-buffers 2)
                   ws-buf (first bufs)
                   js-buf (second bufs)
-                )
-                (loop for i from 0 below (length ws) for row = (aref ws i) do
-                  (loop for wi from 0 below 4
-                    for addr = (+ wi (* 4 i))
-                    for w = (aref row wi)
-                    do
-                    (setf (gl:glaref ws-arr addr) (cdr w))
-                    (setf (gl:glaref js-arr addr) (coerce (car w) 'single-float))
-                  )
                 )
                 (load-buffer ws-buf :array-buffer ws-arr)
                 (load-buffer js-buf :array-buffer js-arr)
@@ -457,8 +459,7 @@
                 (load-uniform-mat-vec-16 p "transform" (if bones gl-root (-> instance :matrix)))
                 (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
                   (gl:bind-vertex-array gl-array)
-                  (gl:draw-elements :triangles
-                    (gl:make-null-gl-array :unsigned-short) :count gl-count) 
+                  (gl:draw-arrays :triangles 0 gl-count) 
                 )
               )
             )
