@@ -205,6 +205,8 @@
 
 (defun mat-to-gl (mat) (-> mat transponed mat-4x4->vec-16))
 
+(defun mat-from-gl (gl-mat) (-> gl-mat vec-16->mat-4x4 transponed))
+
 (defun pose-to-gl (pose) (update-vals pose #'mat-to-gl))
 
 (defun anim-to-gl (anim) (cache-anim anim 120 :posefun #'pose-to-gl))
@@ -394,9 +396,9 @@
 )
 
 (defun collect-gl-instances (tree pose meshes materials)
-  (with-map-keys ((mnums :meshes) matrix children name) tree
+  (with-map-keys ((mnums :meshes) children name) tree
     (lets (
-        mat (map-key pose name)
+        mat (mat-from-gl (map-key pose name))
         own (if (-> mnums length zerop not)
               (map 'list
                 (sfun m lets (mesh (map-key meshes m))
@@ -456,7 +458,10 @@
                 (load-uniform-vec p "color" color)
               )
               (loop for instance in instances do
-                (load-uniform-mat-vec-16 p "transform" (if bones gl-root (-> instance :matrix)))
+                (if bones
+                  (load-uniform-mat-vec-16 p "transform" gl-root)
+                  (load-uniform-mat p "transform" (last-> instance :matrix (mul-mat-4x4 root)))
+                )
                 (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
                   (gl:bind-vertex-array gl-array)
                   (gl:draw-arrays :triangles 0 gl-count) 
