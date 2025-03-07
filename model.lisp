@@ -19,17 +19,7 @@
         )
       )
       (load-texture (kind num loc-file)
-        (lets (
-            abs-file (-> file file-parent (concat-path loc-file))
-          )
-          (with-vals
-            (alexandria:ensure-gethash abs-file textures-cache
-              (load-texture-data abs-file)
-            )
-            :source abs-file
-            :num num
-          )
-        )
+        (list kind num (-> file file-parent (concat-path loc-file)))
       )
       (load-material (mat)
         (make-assoc
@@ -330,10 +320,16 @@
           m
         )
       )
+      (load-texture (kind num abs-file)
+        (with-vals
+          (load-texture-data abs-file)
+          :source abs-file
+          :num num))
       (load-material-to-gl (m)
         (load-blank-for-empty-material
-          (update m (mpart mapcar #'load-texture-to-gl) :textures))
-      )
+          (update m (mpart mapcar
+            (sfun tex load-texture-to-gl
+              (apply #'load-texture tex))) :textures)))
     )
     (with-map-keys (meshes materials anims pose) data (with-vals data
       :materials (map 'vector #'load-material-to-gl materials)
@@ -486,7 +482,6 @@
         is (collect-gl-instances tree pose meshes materials)
         root (or (car mat-stack) (mat-identity 4))
       )
-      is
       (display-gl-instances is meshes pose proj-mat root)
     )
   )
