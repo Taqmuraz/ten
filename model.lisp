@@ -414,53 +414,54 @@
 
 (defun display-gl-instances (instances meshes pose proj root)
   (lets (
-      sg (hash->assoc (group-by instances (sfun i -> i :shader)))
+      sg (group-by instances (sfun i -> i :shader))
       gl-root (mat-to-gl root)
     )
-    (loop for (program . instances) in sg
-      for p = (-> program :program) do
-      (gl:use-program p)
-      (gl:bind-texture :texture-2d 0)
-      (load-uniform-mat p "projection" proj)
-      (lets (
-          bg (hash->assoc (group-by instances (sfun i -> i :bone-names)))
-        )
-        (loop for (bone-names . instances) in bg
-          for bones = (map-key (car instances) :bones)
-          do
-          (when bones
-            (lets (
-                ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
-                os (map 'vector (sfun b map-key b :matrix) bones)
-              )
-              (load-uniform-mats-vec-16 p "jointTransforms" ts)
-              (load-uniform-mats-vec-16 p "jointOffsets" os)
-            )
+    (forhash (program instances) sg
+      (lets (p (-> program :program))
+        (gl:use-program p)
+        (gl:bind-texture :texture-2d 0)
+        (load-uniform-mat p "projection" proj)
+        (lets (
+            bg (group-by instances (sfun i -> i :bone-names))
           )
-          (lets (
-              mg (hash->assoc (group-by instances (sfun i -> i :material)))
-            )
-            (loop for (material . instances) in mg do
-              (lets (
-                  color (-> material :color)
-                  texs (-> material :textures)
+          (forhash (bone-names instances) bg
+            (lets (bones (map-key (car instances) :bones))
+              (when bones
+                (lets (
+                    ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
+                    os (map 'vector (sfun b map-key b :matrix) bones)
+                  )
+                  (load-uniform-mats-vec-16 p "jointTransforms" ts)
+                  (load-uniform-mats-vec-16 p "jointOffsets" os)
                 )
-                (loop for tex in texs do
-                  (gl:active-texture (+
-                    (cffi:foreign-enum-value '%gl:enum :texture0)
-                    (-> tex :num)))
-                  (gl:bind-texture :texture-2d (-> tex :gl-id))
-                )
-                (load-uniform-vec p "color" color)
               )
-              (loop for instance in instances do
-                (if bones
-                  (load-uniform-mat-vec-16 p "transform" gl-root)
-                  (load-uniform-mat p "transform" (last-> instance :matrix (mul-mat-4x4 root)))
+              (lets (
+                  mg (group-by instances (sfun i -> i :material))
                 )
-                (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
-                  (gl:bind-vertex-array gl-array)
-                  (gl:draw-arrays :triangles 0 gl-count) 
+                (forhash (material instances) mg
+                  (lets (
+                      color (-> material :color)
+                      texs (-> material :textures)
+                    )
+                    (loop for tex in texs do
+                      (gl:active-texture (+
+                        (cffi:foreign-enum-value '%gl:enum :texture0)
+                        (-> tex :num)))
+                      (gl:bind-texture :texture-2d (-> tex :gl-id))
+                    )
+                    (load-uniform-vec p "color" color)
+                  )
+                  (loop for instance in instances do
+                    (if bones
+                      (load-uniform-mat-vec-16 p "transform" gl-root)
+                      (load-uniform-mat p "transform" (last-> instance :matrix (mul-mat-4x4 root)))
+                    )
+                    (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
+                      (gl:bind-vertex-array gl-array)
+                      (gl:draw-arrays :triangles 0 gl-count) 
+                    )
+                  )
                 )
               )
             )

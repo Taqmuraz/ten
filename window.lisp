@@ -74,7 +74,7 @@
     (gl:with-pushed-matrix
       (gl:translate 1 -1 -5)
       (gl:rotate -90 0 1 0)
-      (loop for i from 0 below 1
+      (loop for i from 0 below 10
         for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
         (with-stack-push mat-stack rot-mat
           (-> window res :scene
