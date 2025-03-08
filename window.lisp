@@ -65,26 +65,15 @@
     )
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
-    (gl:matrix-mode :projection)
-    (gl:load-identity)
-    (glu:perspective 60 (/ w h) 1 1000)
     (gl:viewport 0 0 w h)
-    (gl:matrix-mode :modelview)
-    (gl:load-identity)
-    (gl:with-pushed-matrix
-      (gl:translate 1 -1 -5)
-      (gl:rotate -90 0 1 0)
-      (loop for i from 0 below 10
-        for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
-        (with-stack-push mat-stack rot-mat
-          (-> window res :scene
-            (pipe
-              ;display-model
-              (display-gl-model
-                :mat-stack mat-stack
-                :proj-mat proj-mat
-                :gl-pose (animate anim time))))))
-    )
+    (loop for i from 0 below 10
+      for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
+      (with-stack-push mat-stack rot-mat
+        (-> window res :scene
+          (display-gl-model
+            :mat-stack mat-stack
+            :proj-mat proj-mat
+            :gl-pose (animate anim time)))))
     (glut:swap-buffers)
   )
 )
