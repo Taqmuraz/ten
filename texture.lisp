@@ -1,9 +1,13 @@
 (in-package #:ten)
 
-(defun load-texture-data (file)
-  (freeimage:with-loaded-32bit-map
-    (file :bitvar bits :widthvar width :heightvar height)
-    (make-assoc :width width :height height :bits bits)
+(defmacro with-texture-data (var file &body body)
+  (lets (w (gensym) h (gensym) b (gensym))
+    `(freeimage:with-loaded-32bit-map
+      (,file :bitvar ,b :widthvar ,w :heightvar ,h)
+      (lets (,var (make-assoc :width ,w :height ,h :bits ,b))
+        ,@body
+      )
+    )
   )
 )
 

@@ -322,14 +322,15 @@
       )
       (load-texture (kind num abs-file)
         (with-vals
-          (load-texture-data abs-file)
+          (with-texture-data data abs-file
+            (load-texture-to-gl data))
           :source abs-file
+          :bits nil
           :num num))
       (load-material-to-gl (m)
         (load-blank-for-empty-material
           (update m (mpart mapcar
-            (sfun tex load-texture-to-gl
-              (apply #'load-texture tex))) :textures)))
+            (mpart apply #'load-texture)) :textures)))
     )
     (with-map-keys (meshes materials anims pose) data (with-vals data
       :materials (map 'vector #'load-material-to-gl materials)
