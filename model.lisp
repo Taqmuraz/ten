@@ -49,7 +49,7 @@
           (mul-mats-4x4 flip m flip)
         )
       )
-      (load-matrix (m) (-> m vec-16->mat-4x4 transponed flip-matrix-yz))
+      (load-matrix (m) (-> m mat-from-gl flip-matrix-yz))
       (load-tree (node)
         (make-assoc
           :name (-> node ai:name keyword-of)
@@ -192,10 +192,6 @@
     )
   )
 )
-
-(defun mat-to-gl (mat) (-> mat transponed mat-4x4->vec-16))
-
-(defun mat-from-gl (gl-mat) (-> gl-mat vec-16->mat-4x4 transponed))
 
 (defun pose-to-gl (pose) (update-vals pose #'mat-to-gl))
 
