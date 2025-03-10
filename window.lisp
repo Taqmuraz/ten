@@ -65,7 +65,7 @@
       h (glut:height window)
       time (get-time)
       proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-      mat-stack (list (mat-translation 0 -50 100))
+      mat-stack (list (mat-translation 0 0 5))
       rot-mat (mat-rotation 0 (* time pi 1/16) 0)
       scene (-> window res :scene)
       anim (-> window res :anim)
@@ -73,9 +73,9 @@
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
     (gl:viewport 0 0 w h)
-    (loop for i from 0 below 30
+    (loop for i from 0 below 500
       for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
-      (with-stack-push mat-stack rot-mat
+      (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
         (-> window res :scene
           (display-gl-model
             :mat-stack mat-stack

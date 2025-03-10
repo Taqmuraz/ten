@@ -388,10 +388,9 @@
   )
 )
 
-(defun collect-gl-instances (tree pose meshes materials)
+(defun collect-gl-instances (tree meshes materials)
   (with-map-keys ((mnums :meshes) children name) tree
     (lets (
-        mat (mat-from-gl (map-key pose name))
         own (if (-> mnums length zerop not)
               (map 'list
                 (sfun m lets (mesh (map-key meshes m))
@@ -401,8 +400,8 @@
                     :shader (map-key mesh :shader)
                     :bones (mapcar (sfun b select-keys b :name :matrix) (map-key mesh :gl-bones))
                     :bone-names (mapcar (sfun b -> b :name) (map-key mesh :bones))
-                    :matrix mat)) mnums))
-        chs (loop for c in children append (collect-gl-instances c pose meshes materials))
+                    :node name)) mnums))
+        chs (loop for c in children append (collect-gl-instances c meshes materials))
       )
       (append own chs)
     )
@@ -452,7 +451,7 @@
                   (loop for instance in instances do
                     (if bones
                       (load-uniform-mat-vec-16 p "transform" gl-root)
-                      (load-uniform-mat p "transform" (last-> instance :matrix (mul-mat-4x4 root)))
+                      (load-uniform-mat p "transform" (last-> instance :node (map-key pose) mat-from-gl (mul-mat-4x4 root)))
                     )
                     (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
                       (gl:bind-vertex-array gl-array)
@@ -477,7 +476,7 @@
   (with-map-keys (tree (tpose :gl-pose) meshes materials) gl-model
     (lets (
         pose (merge-into 'hash-table tpose gl-pose)
-        is (collect-gl-instances tree pose meshes materials)
+        is (collect-gl-instances tree meshes materials)
         root (or (car mat-stack) (mat-identity 4))
       )
       (display-gl-instances is meshes pose proj-mat root)
