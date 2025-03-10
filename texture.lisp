@@ -21,7 +21,7 @@
       (gl:tex-parameter :texture-2d :texture-wrap-t :repeat)
       (gl:tex-parameter :texture-2d :texture-mag-filter :linear)
       (gl:tex-parameter :texture-2d :texture-min-filter :linear)
-      (gl:tex-image-2d :texture-2d 0 :rgba width height 0 :bgra :unsigned-byte bits)
+      (when bits (gl:tex-image-2d :texture-2d 0 :rgba width height 0 :bgra :unsigned-byte bits))
       (with-vals data :gl-id id)
     )
   )

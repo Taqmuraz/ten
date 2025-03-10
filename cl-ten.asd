@@ -21,10 +21,10 @@
   :components (
     (:file "package")
     (:file "stack")
+    (:file "texture")
     (:file "ten")
     (:file "model")
     (:file "window")
-    (:file "texture")
     (:file "shader")
     (:file "geom")
   )
