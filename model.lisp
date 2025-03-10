@@ -408,54 +408,70 @@
   )
 )
 
-(defun display-gl-instances (instances meshes pose proj root)
+(defun group-gl-instances (instances meshes)
   (lets (
       sg (group-by instances (sfun i -> i :shader))
-      gl-root (mat-to-gl root)
-    )
-    (forhash (program instances) sg
-      (lets (p (-> program :program))
-        (gl:use-program p)
+      shader-unload (sfun () progn
         (gl:bind-texture :texture-2d 0)
-        (load-uniform-mat p "projection" proj)
-        (lets (
-            bg (group-by instances (sfun i -> i :bone-names))
-          )
-          (forhash (bone-names instances) bg
-            (lets (bones (map-key (car instances) :bones))
-              (when bones
+        (gl:use-program 0))
+    )
+    (make-assoc :unload shader-unload :nodes
+      (on-map (program instances) sg
+        (lets (p (-> program :program))
+          (lets (
+              bg (group-by instances (sfun i -> i :bone-names))
+              program-load (sfun (proj root pose) progn
+                (gl:use-program p)
+                (gl:bind-texture :texture-2d 0)
+                (load-uniform-mat p "projection" proj))
+            )
+            (make-assoc :load program-load :nodes
+              (on-map (bone-names instances) bg
                 (lets (
-                    ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
-                    os (map 'vector (sfun b map-key b :matrix) bones)
+                    bones (map-key (car instances) :bones)
+                    bones-load (sfun (proj root pose) when bones
+                      (lets (
+                          ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
+                          os (map 'vector (sfun b map-key b :matrix) bones)
+                        )
+                        (load-uniform-mats-vec-16 p "jointTransforms" ts)
+                        (load-uniform-mats-vec-16 p "jointOffsets" os)
+                      )
+                    )
                   )
-                  (load-uniform-mats-vec-16 p "jointTransforms" ts)
-                  (load-uniform-mats-vec-16 p "jointOffsets" os)
-                )
-              )
-              (lets (
-                  mg (group-by instances (sfun i -> i :material))
-                )
-                (forhash (material instances) mg
-                  (lets (
-                      color (-> material :color)
-                      texs (-> material :textures)
-                    )
-                    (loop for tex in texs do
-                      (gl:active-texture (+
-                        (cffi:foreign-enum-value '%gl:enum :texture0)
-                        (-> tex :num)))
-                      (gl:bind-texture :texture-2d (-> tex :gl-id))
-                    )
-                    (load-uniform-vec p "color" color)
-                  )
-                  (loop for instance in instances do
-                    (if bones
-                      (load-uniform-mat-vec-16 p "transform" gl-root)
-                      (load-uniform-mat p "transform" (last-> instance :node (map-key pose) mat-from-gl (mul-mat-4x4 root)))
-                    )
-                    (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
-                      (gl:bind-vertex-array gl-array)
-                      (gl:draw-arrays :triangles 0 gl-count) 
+                  (make-assoc :load bones-load :nodes
+                    (lets (
+                        mg (group-by instances (sfun i -> i :material))
+                      )
+                      (on-map (material instances) mg
+                        (lets (
+                            color (-> material :color)
+                            texs (-> material :textures)
+                            load-textures (sfun (proj root pose) progn
+                              (load-uniform-vec p "color" color)
+                              (loop for tex in texs do
+                                (gl:active-texture (+
+                                  (cffi:foreign-enum-value '%gl:enum :texture0)
+                                  (-> tex :num)))
+                                (gl:bind-texture :texture-2d (-> tex :gl-id))))
+                          )
+                          (make-assoc :key material :load load-textures :nodes
+                            (loop for instance in instances collect
+                              (make-assoc :load (sfun (proj root pose) progn
+                                  (if bones
+                                    (load-uniform-mat p "transform" root)
+                                    (load-uniform-mat p "transform" (last-> instance :node (map-key pose) mat-from-gl (mul-mat-4x4 root)))
+                                  )
+                                  (with-map-keys (gl-array gl-count) (last-> instance :mesh (map-key meshes))
+                                    (gl:bind-vertex-array gl-array)
+                                    (gl:draw-arrays :triangles 0 gl-count) 
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
                     )
                   )
                 )
@@ -464,22 +480,27 @@
           )
         )
       )
-      (gl:bind-texture :texture-2d 0)
-      (gl:use-program 0)
     )
   )
 )
 
-(defun display-gl-model (gl-model &key (mat-stack nil)
-                                       (proj-mat (mat-identity 4))
-                                       (gl-pose nil))
-  (with-map-keys (tree (tpose :gl-pose) meshes materials) gl-model
-    (lets (
-        pose (merge-into 'hash-table tpose gl-pose)
-        is (collect-gl-instances tree meshes materials)
-        root (or (car mat-stack) (mat-identity 4))
-      )
-      (display-gl-instances is meshes pose proj-mat root)
-    )
-  )
-)
+(defun load-gl-group (gl-model)
+  (with-vals gl-model
+    :group
+    (with-map-keys (tree meshes materials) gl-model
+      (-> (collect-gl-instances tree meshes materials)
+        (group-gl-instances meshes)))))
+
+(defun display-gl-group (group proj root pose)
+  (with-map-keys (load unload nodes) group
+    (when load (funcall load proj root pose))
+    (loop for n in nodes do (display-gl-group n proj root pose))
+    (when unload (funcall unload))))
+
+(defun display-gl-model (gl-model &key (proj (mat-idenitty 4))
+                                       (root (mat-identity 4))
+                                       (pose nil))
+  (with-map-keys ((tpose :gl-pose) group) gl-model
+    (when group
+      (lets (pose (merge-into 'hash-table tpose pose))
+        (display-gl-group group proj root pose)))))

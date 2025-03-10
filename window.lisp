@@ -49,7 +49,7 @@
           (uiop:read-file-string "res/shaders/fragment.glsl")
         )
       )
-      model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders))
+      model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders) load-gl-group)
       anim (-> model :gl-anims vals first)
     )
     (setf (res window) (hash :scene model :anim anim))
@@ -78,9 +78,9 @@
       (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
         (-> window res :scene
           (display-gl-model
-            :mat-stack mat-stack
-            :proj-mat proj-mat
-            :gl-pose (animate anim time)))))
+            :root (car mat-stack)
+            :proj proj-mat
+            :pose (animate anim time)))))
     (glut:swap-buffers)
   )
 )
