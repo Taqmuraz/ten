@@ -29,6 +29,11 @@
         (setf *fps* 1)
         *last-fps*))))
 
+(cffi:defcallback glut-timer-func :void ((val :unsigned-int))
+  (glut:post-redisplay)
+  (glut:timer-func 1 (cffi:callback glut-timer-func) 0)
+)
+
 (defmethod glut:display-window :before ((window window))
   (gl:polygon-mode :front :fill)
   (gl:enable :texture-2d :depth-test)
@@ -49,6 +54,8 @@
     )
     (setf (res window) (hash :scene model :anim anim))
   )
+  (glut:timer-func 0 (cffi:callback glut-timer-func) 0)
+  (glut:post-redisplay)
 )
 
 (defmethod glut:display ((window window))
@@ -76,10 +83,6 @@
             :gl-pose (animate anim time)))))
     (glut:swap-buffers)
   )
-)
-
-(defmethod glut:idle ((window window))
-  (glut:post-redisplay)
 )
 
 (defmethod glut:reshape ((window window) w h)
