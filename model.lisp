@@ -448,8 +448,6 @@
 (defun display-gl-group (group &key (proj (mat-identity 4))
                                     (root (mat-identity 4))
                                     (pose nil))
-  (gl:bind-texture :texture-2d 0)
-  (gl:use-program 0)
   (with-map-keys (meshes (tpose :pose) shader-groups) group
     (loop
       with pose = (merge-into 'hash-table tpose pose)
@@ -499,4 +497,6 @@
       )
     )
   )
+  (gl:bind-texture :texture-2d 0)
+  (gl:use-program 0)
 )
