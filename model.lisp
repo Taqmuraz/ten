@@ -340,57 +340,6 @@
   )
 )
 
-(defun display-model (model)
-  (labels (
-    (display-tree (meshes materials tree)
-      (with-map-keys ((tmeshes :meshes) matrix) tree
-        (gl:with-pushed-matrix
-          (-> matrix mat-4x4->vec-16 gl:mult-matrix)
-          (loop for id across tmeshes
-            for mesh = (map-key meshes id)
-            for vs = (map-key mesh :verts)
-            for faces = (map-key mesh :faces)
-            for uvs = (map-key mesh :uvs)
-            for ns = (map-key mesh :normals)
-            for mat-index = (map-key mesh :material)
-            for mat = (map-key materials mat-index)
-            for color = (map-key mat :color #(1 1 1 1))
-            for textures = (map-key mat :textures)
-            do (progn
-              (gl:bind-texture :texture-2d 0)
-              (loop for tex in textures
-                do (with-map-keys (gl-id num) tex
-                  (gl:active-texture (+ (cffi:foreign-enum-value '%gl:enum :texture0) num))
-                  (gl:bind-texture :texture-2d gl-id)
-                )
-              )
-              (gl:with-primitives :triangles
-                (apply #'gl:color (coerce color 'list))
-                (loop for f across faces do
-                  (loop for i across f
-                    for v = (coerce (map-key vs i) 'list)
-                    for uv = (coerce (if uvs (map-key (map-key uvs 0) i)) 'list)
-                    for n = (coerce (map-key ns i) 'list)
-                    do (progn
-                      (when uv (apply #'gl:tex-coord uv))
-                      (apply #'gl:normal n)
-                      (apply #'gl:vertex v)
-                    )
-                  )
-                )
-              )
-            )
-          )
-          (loop for c in (map-key tree :children) do (display-tree meshes materials c))
-        )
-      )
-    )
-  ) (with-map-keys (meshes materials tree) model
-      (display-tree meshes materials tree)
-    )
-  )
-)
-
 (defun collect-gl-instances (tree meshes materials)
   (with-map-keys ((mnums :meshes) children name) tree
     (lets (
