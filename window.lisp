@@ -50,7 +50,7 @@
         )
       )
       model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders) load-gl-group)
-      anim (-> model :gl-anims vals first)
+      anim (-> model :anims vals second)
     )
     (setf (res window) (hash :scene model :anim anim))
   )

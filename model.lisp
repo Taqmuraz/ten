@@ -436,10 +436,11 @@
                             (mapcar (sfun i -> i :node) instances)))))))))))))))
 
 (defun load-gl-group (gl-model)
-  (with-map-keys (tree gl-pose meshes materials) gl-model
+  (with-map-keys (tree gl-pose gl-anims meshes materials) gl-model
     (make-assoc
       :meshes meshes
       :pose gl-pose
+      :anims gl-anims
       :shader-groups
         (-> (collect-gl-instances tree meshes materials)
           (group-gl-instances meshes)))))
