@@ -497,7 +497,7 @@
     (loop for n in nodes do (display-gl-group n proj root pose))
     (when unload (funcall unload))))
 
-(defun display-gl-model (gl-model &key (proj (mat-idenitty 4))
+(defun display-gl-model (gl-model &key (proj (mat-identity 4))
                                        (root (mat-identity 4))
                                        (pose nil))
   (with-map-keys ((tpose :gl-pose) group) gl-model
