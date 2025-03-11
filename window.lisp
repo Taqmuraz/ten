@@ -36,7 +36,8 @@
 
 (defmethod glut:display-window :before ((window window))
   (gl:polygon-mode :front :fill)
-  (gl:enable :texture-2d :depth-test)
+  (gl:cull-face :back)
+  (gl:enable :texture-2d :depth-test :cull-face)
   (gl:disable :color-material)
   (lets (
       shaders (hash
