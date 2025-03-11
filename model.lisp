@@ -254,7 +254,7 @@
         )
       )
       (load-mesh-to-gl (m)
-        (with-map-keys (verts uvs normals faces bones) m
+        (with-map-keys (verts uvs normals faces bones material) m
           (lets (
               inds (apply #'concatenate 'vector (coerce faces 'list))
               vs (make-buffer verts inds 3)
@@ -301,11 +301,13 @@
             (load-attrib-array norm-buf :array-buffer 2 3)
             (gl:bind-buffer :element-array-buffer elt-buf)
             (gl:bind-vertex-array 0)
-            (with-vals m
+            (make-assoc
               :gl-array arr
               :gl-count (length inds)
               :gl-bones (update-vals bones (sfun b update b #'mat-to-gl :matrix))
+              :bones bones
               :shader (if bones :skin :static)
+              :material material
             )
           )
         )
