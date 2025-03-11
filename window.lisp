@@ -77,7 +77,7 @@
       for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
       (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
         (-> window res :scene
-          (display-gl-model
+          (display-gl-group
             :root (car mat-stack)
             :proj proj-mat
             :pose (animate anim time)))))
