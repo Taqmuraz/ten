@@ -18,6 +18,14 @@
 
 (defun mat-from-gl (m) (mmat-from-gl m))
 
+(defun load-instancing-shader-to-gl (vert-str frag-str max-instances)
+  (labels (
+      (prepare (str) (format nil "const int MAX_INSTANCES = ~A;~%~A" max-instances str))
+    )
+    (load-shader-to-gl (prepare vert-str) (prepare frag-str))
+  )
+)
+
 (defun load-shader-to-gl (vert-str frag-str)
   (labels (
       (prepare (str) (format nil

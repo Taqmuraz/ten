@@ -29,17 +29,13 @@
         (setf *fps* 1)
         *last-fps*))))
 
-(cffi:defcallback glut-timer-func :void ((val :unsigned-int))
-  (glut:post-redisplay)
-  (glut:timer-func 1 (cffi:callback glut-timer-func) 0)
-)
-
 (defmethod glut:display-window :before ((window window))
   (gl:polygon-mode :front :fill)
   (gl:cull-face :back)
   (gl:enable :texture-2d :depth-test :cull-face)
   (gl:disable :color-material)
   (lets (
+      max-instances 1000
       shaders (hash
         :static (load-shader-to-gl
           (uiop:read-file-string "res/shaders/vertex.glsl")
@@ -49,14 +45,22 @@
           (uiop:read-file-string "res/shaders/skin_vertex.glsl")
           (uiop:read-file-string "res/shaders/fragment.glsl")
         )
+        :instancing-static (load-instancing-shader-to-gl
+          (uiop:read-file-string "res/shaders/instancing_vertex.glsl")
+          (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
+          max-instances
+        )
+        :instancing-skin (load-instancing-shader-to-gl
+          (uiop:read-file-string "res/shaders/skin_instancing_vertex.glsl")
+          (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
+          max-instances
+        )
       )
-      model (-> window res (map-key :file) load-model-data (load-model-to-gl shaders) load-gl-group)
+      model (-> window res (map-key :file) load-model-data load-model-to-gl load-gl-group)
       anim (-> model :anims vals first)
     )
-    (setf (res window) (hash :scene model :anim anim))
+    (setf (res window) (hash :scene model :anim anim :shaders shaders))
   )
-  (glut:timer-func 0 (cffi:callback glut-timer-func) 0)
-  (glut:post-redisplay)
 )
 
 (defmethod glut:display ((window window))
@@ -70,6 +74,7 @@
       rot-mat (mat-rotation 0 pi 0)
       scene (-> window res :scene)
       anim (-> window res :anim)
+      shaders (-> window res :shaders)
     )
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
@@ -79,6 +84,7 @@
       (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
         (-> window res :scene
           (display-gl-group
+            shaders
             :root (car mat-stack)
             :proj proj-mat
             :pose (animate anim time)))))
@@ -89,4 +95,8 @@
 (defmethod glut:reshape ((window window) w h)
   (setf (glut:width window) w)
   (setf (glut:height window) h)
+)
+
+(defmethod glut:idle ((window window))
+  (glut:post-redisplay)
 )
