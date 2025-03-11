@@ -447,6 +447,7 @@
 
 (defun display-gl-group (group &key (proj (mat-identity 4))
                                     (root (mat-identity 4))
+                                    (light #(0 -1 0))
                                     (pose nil))
   (with-map-keys (meshes (tpose :pose) shader-groups) group
     (loop
@@ -456,6 +457,7 @@
         (gl:use-program p)
         (gl:bind-texture :texture-2d 0)
         (load-uniform-mat p "projection" proj)
+        (load-uniform-vec p "worldLight" light)
         (loop for bg in bone-groups do
           (with-map-keys (bones material-groups) bg
             (when bones
