@@ -183,14 +183,31 @@
           map (-> anim :map)
           bones (-> anim :bones)
           keys (loop for i from 0 below frames-count collect (* len (/ i frames-count)))
-          poses (mapcar (sfun k cons k (cache-pose (map-key map k) bones)) keys)
-          poses (update-vals poses posef)
-          poses (assoc->tree poses #'< #'=)
+          frames (mapcar (sfun k cons k (cache-pose (map-key map k) bones)) keys)
+          frames (update-vals frames posef)
+          poses (assoc->tree frames #'< #'=)
           func (sfun k -> (find-bounds poses k #'<) car cdr)
         )
-        (with-vals anim :map func)
+        (with-vals anim :map func :frames frames)
       )
     )
+  )
+)
+
+(defun anims-to-gl-buffer (anims)
+  (lets (
+      data (loop for a in anims append
+        (loop for f in (-> a :frames vals) append
+          (loop for b in (-> a :bones) collect
+            (map-key f b)
+          )
+        )
+      )
+      buf (first (gl:gen-buffers 1))
+      r (list 2 buf)
+    )
+    (load-instancing-buffer r data 16)
+    r
   )
 )
 
