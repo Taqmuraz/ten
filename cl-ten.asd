@@ -20,7 +20,6 @@
   )
   :components (
     (:file "package")
-    (:file "params")
     (:file "stack")
     (:file "texture")
     (:file "ten")

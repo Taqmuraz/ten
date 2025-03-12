@@ -31,10 +31,7 @@
 (defun load-shader-to-gl (vert-str frag-str)
   (labels (
       (prepare (str) (format nil
-        "#version 430~%#ifdef GL_ES~%precision mediump float;~%#endif~%~A"
-        (prepend-consts str (list
-          (list :max-instances "int" *max-instances*)
-          (list :max-transforms "int" *max-joints*)))))
+        "#version 430~%#ifdef GL_ES~%precision mediump float;~%#endif~%~A" str))
       (load-shader (s str)
         (gl:shader-source s str)
         (gl:compile-shader s)
