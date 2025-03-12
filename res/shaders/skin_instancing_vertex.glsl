@@ -9,6 +9,7 @@ out vec3 worldNormal;
 flat out int id;
 uniform mat4 projection;
 uniform float bones;
+uniform float frames;
 
 layout(binding = 5, std430) readonly buffer ssbo1 {
     mat4 transforms[];
@@ -38,6 +39,12 @@ void main (void)
 	vec3 totalNormal = vec3(0);
 	id = gl_InstanceID;
 	mat4 transform = transforms[id];
+	int anim = int(animInds[id]);
+	float animTime = times[id];
+	float animLen = animLens[id];
+	int animFrame = int(floor(animTime / animLen * frames));
+	animFrame = int(floor(animFrame - (frames * floor(animFrame / frames))));
+	if (animFrame >= frames) animFrame = 0;
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -45,8 +52,7 @@ void main (void)
 		if (j != -1)
 		{
 		  int b = int(shift[j]);
-		  int a = int(animInds[id]);
-		  mat4 t = anims[b + (a * int(bones))] * jointOffsets[j];
+		  mat4 t = anims[b + int(anim * frames + animFrame) * int(bones)] * jointOffsets[j];
 			totalPos += (t * vec4(position, 1)).xyz * weights[i];
 			totalNormal += (t * vec4(normal, 0)).xyz * weights[i];
 		}

@@ -65,7 +65,7 @@
       anim (-> window res :anim)
       shaders (-> window res :shaders)
       instances (with-stack-push mat-stack rot-mat
-        (loop for i from 0 below 500 collect
+        (loop for i from 0 below 1000 collect
           (make-assoc
             :anim (make-assoc :index 1 :time (+ time (/ i 50)) :length (-> anim :length))
             :pose (animate anim (+ time (/ i 50)))

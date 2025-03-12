@@ -527,6 +527,7 @@
                       bone->index (map 'vector #'vector (on-map (i e) names (map-key anim->index e -1)))
                     )
                     (load-uniform-float p "bones" (length anim-bones))
+                    (load-uniform-float p "frames" *anim-frames*)
                     (load-instancing-buffer (-> buffers :shift) bone->index 1)
                     (load-instancing-buffer (-> buffers :times) times 1)
                     (load-instancing-buffer (-> buffers :anim-inds) anim-inds 1)
