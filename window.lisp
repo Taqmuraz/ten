@@ -76,8 +76,8 @@
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
     (gl:viewport 0 0 w h)
-    (loop for i from 0 below 100
-      for offset = (mat-translation (- 5 (mod i 10)) -2 (floor i 10)) do
+    (loop for i from 0 below 1
+      for offset = (mat-translation (mod i 10) -2 (floor i 10)) do
       (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
         (-> window res :scene
           (display-gl-group

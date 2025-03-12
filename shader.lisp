@@ -5,14 +5,14 @@
     `(lets (,v ,m)
       (vector ,@(loop for i from 0 below 4 append
         (loop for j from 0 below 4 collect
-          `(aref (aref ,v ,j) ,i)))))))
+          `(aref (aref ,v ,i) ,j)))))))
 
 (defmacro mmat-from-gl (m)
   (lets (v (gensym))
     `(lets (,v ,m)
       (vector ,@(loop for j from 0 below 4 collect
         `(vector ,@(loop for i from 0 below 4 collect
-          `(aref ,v ,(+ j (* i 4))))))))))
+          `(aref ,v ,(+ i (* j 4))))))))))
 
 (defun mat-to-gl (m) (mmat-to-gl m))
 
@@ -31,7 +31,7 @@
 (defun load-shader-to-gl (vert-str frag-str)
   (labels (
       (prepare (str) (format nil
-        "#version 330~%#ifdef GL_ES~%precision mediump float;~%#endif~%~A"
+        "#version 430~%#ifdef GL_ES~%precision mediump float;~%#endif~%~A"
         (prepend-consts str (list
           (list :max-instances "int" *max-instances*)
           (list :max-transforms "int" *max-joints*)))))
@@ -90,7 +90,7 @@
   (with-uniform-buffer (ptr len :float 'single-float (concat 'vector value))
     (%gl:uniform-4fv loc len ptr)))
 
-(def-uniform :mat (gl:uniform-matrix loc 4 (-> value mat-to-gl vector)))
-(def-uniform :mats (gl:uniform-matrix loc 4 (map 'vector #'mat-to-gl value)))
-(def-uniform :mat-vec-16 (gl:uniform-matrix loc 4 (vector value)))
-(def-uniform :mats-vec-16 (gl:uniform-matrix loc 4 (coerce value 'vector)))
+(def-uniform :mat (gl:uniform-matrix loc 4 (-> value mat-to-gl vector) nil))
+(def-uniform :mats (gl:uniform-matrix loc 4 (map 'vector #'mat-to-gl value) nil))
+(def-uniform :mat-vec-16 (gl:uniform-matrix loc 4 (vector value) nil))
+(def-uniform :mats-vec-16 (gl:uniform-matrix loc 4 (coerce value 'vector) nil))

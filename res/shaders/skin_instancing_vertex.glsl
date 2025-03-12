@@ -7,11 +7,18 @@ layout (location = 4) in vec4 weights;
 out vec2 uv;
 out vec3 worldNormal;
 flat out int id;
-uniform mat4 transforms[MAX_INSTANCES];
 uniform mat4 projection;
+uniform float bones;
 
-uniform mat4 jointTransforms[MAX_TRANSFORMS * MAX_INSTANCES];
-uniform mat4 jointOffsets[MAX_TRANSFORMS];
+layout(binding = 5, std430) readonly buffer ssbo1 {
+    mat4 transforms[];
+};
+layout(binding = 6, std430) readonly buffer ssbo2 {
+    mat4 jointOffsets[];
+};
+layout(binding = 7, std430) readonly buffer ssbo3 {
+    mat4 jointTransforms[];
+};
 
 void main (void)
 {
@@ -25,7 +32,7 @@ void main (void)
 		int j = int(joints[i]);
 		if (j != -1)
 		{
-		  mat4 t = jointTransforms[j + id * MAX_TRANSFORMS] * jointOffsets[j];
+		  mat4 t = jointTransforms[j + (id * int(bones))] * jointOffsets[j];
 			totalPos += (transform * t * vec4(position, 1)).xyz * weights[i];
 			totalNormal += (transform * t * vec4(normal, 0)).xyz * weights[i];
 		}

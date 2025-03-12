@@ -5,8 +5,11 @@ flat in int id;
 out vec4 out_Color;
 
 uniform sampler2D texture2d;
-uniform vec4 colors[MAX_INSTANCES];
 uniform vec3 worldLight;
+
+layout(binding = 8, std430) readonly buffer ssbo4 {
+    vec4 colors[];
+};
 
 void main (void)
 {
