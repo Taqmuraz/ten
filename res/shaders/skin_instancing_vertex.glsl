@@ -17,7 +17,19 @@ layout(binding = 6, std430) readonly buffer ssbo2 {
     mat4 jointOffsets[];
 };
 layout(binding = 7, std430) readonly buffer ssbo3 {
-    mat4 jointTransforms[];
+    float shift[];
+};
+layout(binding = 9, std430) readonly buffer ssbo5 {
+    float times[];
+};
+layout(binding = 10, std430) readonly buffer ssbo6 {
+    float animInds[];
+};
+layout(binding = 11, std430) readonly buffer ssbo7 {
+    float animLens[];
+};
+layout(binding = 12, std430) readonly buffer ssbo8 {
+    mat4 anims[];
 };
 
 void main (void)
@@ -32,7 +44,9 @@ void main (void)
 		int j = int(joints[i]);
 		if (j != -1)
 		{
-		  mat4 t = jointTransforms[j + (id * int(bones))] * jointOffsets[j];
+		  int b = int(shift[j]);
+		  int a = int(animInds[id]);
+		  mat4 t = anims[b + (a * int(bones))] * jointOffsets[j];
 			totalPos += (t * vec4(position, 1)).xyz * weights[i];
 			totalNormal += (t * vec4(normal, 0)).xyz * weights[i];
 		}

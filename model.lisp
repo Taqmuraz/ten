@@ -194,17 +194,30 @@
   )
 )
 
-(defun anims-to-gl-buffer (anims)
+(defparameter *anim-frames* 120)
+
+(defun anims-to-gl-buffer (anims pose bones)
   (lets (
       data (loop for a in anims append
         (loop for f in (-> a :frames vals) append
-          (loop for b in (-> a :bones) collect
-            (map-key f b)
+          (loop for b across bones collect
+            (or (map-key f b) (map-key pose b))
           )
         )
       )
       buf (first (gl:gen-buffers 1))
-      r (list 2 buf)
+      r (list 12 buf)
+    )
+    (load-instancing-buffer r data 16)
+    r
+  )
+)
+
+(defun bones-to-gl-buffer (bones)
+  (lets (
+      data (map-by-key 'vector :matrix bones)
+      buf (-> 1 gl:gen-buffers first)
+      r (list 6 buf)
     )
     (load-instancing-buffer r data 16)
     r
@@ -213,7 +226,7 @@
 
 (defun pose-to-gl (pose) (update-vals pose #'mat-to-gl))
 
-(defun anim-to-gl (anim) (cache-anim anim 120 :posefun #'pose-to-gl))
+(defun anim-to-gl (anim) (cache-anim anim *anim-frames* :posefun #'pose-to-gl))
 
 (defun load-model-to-gl (data)
   (labels (
@@ -390,8 +403,9 @@
           (on-map (bone-names instances) bg
             (lets (
                 bones (map-key (car instances) :bones)
+                bones-buffer (bones-to-gl-buffer bones)
               )
-              (make-assoc :bones bones :material-groups
+              (make-assoc :bones bones :bones-buffer bones-buffer :material-groups
                 (lets (
                     mg (group-by instances (sfun i -> i :material))
                   )
@@ -407,14 +421,23 @@
                             (mapcar (sfun i -> i :node) instances)))))))))))))))
 
 (defun load-gl-group (gl-model)
-  (with-map-keys (tree gl-pose gl-anims meshes materials) gl-model
-    (make-assoc
-      :meshes meshes
-      :pose gl-pose
-      :anims gl-anims
-      :shader-groups
-        (-> (collect-gl-instances tree meshes materials)
-          (group-gl-instances meshes)))))
+  (with-map-keys (tree gl-pose gl-anims gl-bones meshes materials) gl-model
+    (lets (
+        anim-bones (coerce (last->
+          (loop for m across meshes append (last-> m :bones (map-by-key 'list :name)))
+          (apply #'hash-set)
+          keys
+        ) 'vector)
+      )
+      (make-assoc
+        :meshes meshes
+        :pose gl-pose
+        :anims gl-anims
+        :anim-bones anim-bones
+        :anims-buffer (-> gl-anims vals (anims-to-gl-buffer gl-pose anim-bones))
+        :shader-groups
+          (-> (collect-gl-instances tree meshes materials)
+            (group-gl-instances meshes))))))
 
 (defun display-gl-group (group shaders &key (proj (mat-identity 4))
                                             (root (mat-identity 4))
@@ -422,7 +445,10 @@
                                             (pose nil))
   (display-gl-group-instanced group shaders
     (vector
-      (make-assoc :pose pose :root root))
+      (make-assoc :pose pose :root root
+        :anim (make-assoc :index 0 :time 0 :length 1)
+      )
+    )
     :proj proj
     :light light
   )
@@ -449,26 +475,39 @@
   )
 )
 
+(defun bind-instancing-buffer (buffer)
+  (destructuring-bind (base buf) buffer
+    (gl:bind-buffer :shader-storage-buffer buf)
+    (%gl:bind-buffer-base :shader-storage-buffer base buf)
+  )
+)
+
 (defun alloc-instancing-buffers ()
-  (destructuring-bind (trans bones poses color) (gl:create-buffers 4)
+  (destructuring-bind (trans bones shift color times anim-inds anim-lens) (gl:create-buffers 7)
     (make-assoc
       :trans (list 5 trans)
-      :bones (list 6 bones)
-      :poses (list 7 poses)
+      :shift (list 7 shift)
       :color (list 8 color)
+      :times (list 9 times)
+      :anim-inds (list 10 anim-inds)
+      :anim-lens (list 11 anim-lens)
     )
   )
 )
 
 (defun display-gl-group-instanced (group shaders instances &key (proj (mat-identity 4))
                                                                 (light #(0 -1 0)))
-  (with-map-keys (meshes (tpose :pose) shader-groups) group
+  (with-map-keys (meshes (tpose :pose) shader-groups anim-bones anims-buffer) group
     (lets (
         buffers (alloc-instancing-buffers)
         instances (coerce instances 'vector)
         len (length instances)
         poses (map 'vector (sfun i last-> i :pose (merge-into 'hash-table tpose)) instances)
         roots (map-by-key 'vector :root instances)
+        anims (map-by-key 'vector :anim instances)
+        times (map 'vector #'vector (map-by-key 'vector :time anims))
+        anim-inds (map 'vector #'vector (map-by-key 'vector :index anims))
+        anim-lens (map 'vector #'vector (map-by-key 'vector :length anims))
       )
       (loop for sg in shader-groups do
         (with-map-keys (shader bone-groups) sg
@@ -480,17 +519,20 @@
             (load-uniform-mat p "projection" proj)
             (load-uniform-vec p "worldLight" light)
             (loop for bg in bone-groups do
-              (with-map-keys (bones material-groups) bg
+              (with-map-keys (bones bones-buffer material-groups) bg
                 (when bones
                   (lets (
-                      ts (map 'vector (sfun pose map 'vector
-                        (sfun b map-key pose (map-key b :name)) bones) poses)
-                      ts (concat 'vector ts)
-                      os (map 'vector (sfun b map-key b :matrix) bones)
+                      names (map-by-key 'vector :name bones)
+                      anim->index (assoc->hash (on-map (i e) anim-bones (cons e i)))
+                      bone->index (map 'vector #'vector (on-map (i e) names (map-key anim->index e -1)))
                     )
-                    (load-uniform-float p "bones" (length os))
-                    (load-instancing-buffer (-> buffers :poses) ts 16)
-                    (load-instancing-buffer (-> buffers :bones) os 16)
+                    (load-uniform-float p "bones" (length anim-bones))
+                    (load-instancing-buffer (-> buffers :shift) bone->index 1)
+                    (load-instancing-buffer (-> buffers :times) times 1)
+                    (load-instancing-buffer (-> buffers :anim-inds) anim-inds 1)
+                    (load-instancing-buffer (-> buffers :anim-lens) anim-lens 1)
+                    (bind-instancing-buffer anims-buffer)
+                    (bind-instancing-buffer bones-buffer)
                   )
                 )
                 (loop for mg in material-groups do

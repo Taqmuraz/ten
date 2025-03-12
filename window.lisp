@@ -67,6 +67,7 @@
       instances (with-stack-push mat-stack rot-mat
         (loop for i from 0 below 500 collect
           (make-assoc
+            :anim (make-assoc :index 1 :time (+ time (/ i 50)) :length (-> anim :length))
             :pose (animate anim (+ time (/ i 50)))
             :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
           )
