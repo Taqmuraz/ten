@@ -1,5 +1,6 @@
 in vec2 uv;
 in vec3 worldNormal;
+flat in int id;
 
 out vec4 out_Color;
 
@@ -9,7 +10,6 @@ uniform vec3 worldLight;
 
 void main (void)
 {
-  int id = gl_InstanceID;
   vec4 color = colors[id];
   float l = -dot(worldLight, worldNormal) * 0.5 + 0.5;
 	vec3 c = texture(texture2d, uv).rgb * color.rgb * l;

@@ -23,6 +23,7 @@
       )
       (load-material (mat)
         (make-assoc
+          :name (map-key mat "?mat.name")
           :color (merge-into 'vector (make-assoc 3 1) (map-key mat "$clr.diffuse"))
           :textures (mapcar (mpart apply #'load-texture) (map-key mat "$tex.file"))
         )
@@ -380,9 +381,10 @@
                   (on-map (material instances) mg
                     (lets (
                         color (-> material :color)
+                        name (-> material :name)
                         texs (-> material :textures)
                         msg (group-by instances (sfun i -> i :mesh)))
-                      (make-assoc :color color :textures texs :mesh-groups
+                      (make-assoc :name name :color color :textures texs :mesh-groups
                         (on-map (mesh instances) msg
                           (make-assoc :mesh mesh :nodes
                             (mapcar (sfun i -> i :node) instances)))))))))))))))
@@ -398,51 +400,67 @@
           (group-gl-instances meshes)))))
 
 (defun display-gl-group (group shaders &key (proj (mat-identity 4))
-                                    (root (mat-identity 4))
-                                    (light #(0 -1 0))
-                                    (pose nil))
+                                            (root (mat-identity 4))
+                                            (light #(0 -1 0))
+                                            (pose nil))
+  (display-gl-group-instanced group shaders
+    (vector
+      (make-assoc :pose pose :root root)))
+)
+
+(defun display-gl-group-instanced (group shaders instances &key (proj (mat-identity 4))
+                                                                (light #(0 -1 0)))
   (with-map-keys (meshes (tpose :pose) shader-groups) group
-    (loop
-      with pose = (merge-into 'hash-table tpose pose)
-      for sg in shader-groups do
-      (with-map-keys (shader bone-groups) sg
-        (lets (
-            p (map-key (map-key shaders shader) :program)
-          )
-          (gl:use-program p)
-          (gl:bind-texture :texture-2d 0)
-          (load-uniform-mat p "projection" proj)
-          (load-uniform-vec p "worldLight" light)
-          (loop for bg in bone-groups do
-            (with-map-keys (bones material-groups) bg
-              (when bones
-                (lets (
-                    ts (map 'vector (sfun b map-key pose (map-key b :name)) bones)
-                    os (map 'vector (sfun b map-key b :matrix) bones)
+    (lets (
+        instances (coerce instances 'vector)
+        len (length instances)
+        poses (map 'vector (sfun i last-> i :pose (merge-into 'hash-table tpose)) instances)
+        roots (map-by-key 'vector :root instances)
+      )
+      (loop for sg in shader-groups do
+        (with-map-keys (shader bone-groups) sg
+          (lets (
+              p (map-key (map-key shaders (keyword-of :instancing- shader)) :program)
+            )
+            (gl:use-program p)
+            (gl:bind-texture :texture-2d 0)
+            (load-uniform-mat p "projection" proj)
+            (load-uniform-vec p "worldLight" light)
+            (loop for bg in bone-groups do
+              (with-map-keys (bones material-groups) bg
+                (when bones
+                  (lets (
+                      ts (map 'vector (sfun pose map 'vector
+                        (sfun b map-key pose (map-key b :name)) bones) poses)
+                      ts (concat 'vector ts)
+                      os (map 'vector (sfun b map-key b :matrix) bones)
+                    )
+                    (load-uniform-mats-vec-16 p "jointTransforms" ts)
+                    (load-uniform-mats-vec-16 p "jointOffsets" os)
                   )
-                  (load-uniform-mats-vec-16 p "jointTransforms" ts)
-                  (load-uniform-mats-vec-16 p "jointOffsets" os)
                 )
-              )
-              (loop for mg in material-groups do
-                (with-map-keys (textures color mesh-groups) mg
-                  (load-uniform-vec p "color" color)
-                  (loop for tex in textures do
-                    (gl:active-texture (+
-                      (cffi:foreign-enum-value '%gl:enum :texture0)
-                      (-> tex :num)))
-                    (gl:bind-texture :texture-2d (-> tex :gl-id)))
-                  (loop for msg in mesh-groups do
-                    (with-map-keys (mesh nodes) msg
-                      (loop for node in nodes do
-                        (if bones
-                          (load-uniform-mat p "transform" root)
-                          (load-uniform-mat p "transform"
-                            (last-> node (map-key pose) mat-from-gl (mul-mat-4x4 root)))
-                        )
-                        (with-map-keys (gl-array gl-count) (map-key meshes mesh)
-                          (gl:bind-vertex-array gl-array)
-                          (gl:draw-arrays :triangles 0 gl-count)
+                (loop for mg in material-groups do
+                  (with-map-keys (textures color mesh-groups) mg
+                    (load-uniform-vec-4-array p "colors" (loop repeat len collect color))
+                    (loop for tex in textures do
+                      (gl:active-texture (+
+                        (cffi:foreign-enum-value '%gl:enum :texture0)
+                        (-> tex :num)))
+                      (gl:bind-texture :texture-2d (-> tex :gl-id)))
+                    (loop for msg in mesh-groups do
+                      (with-map-keys (mesh nodes) msg
+                        (loop for node in nodes do
+                          (if bones
+                            (load-uniform-mats p "transforms" roots)
+                            (load-uniform-mats p "transforms"
+                              (map 'vector
+                                (sfun (root pose) last-> node (map-key pose) mat-from-gl
+                                  (mul-mat-4x4 root)) roots poses))
+                          )
+                          (with-map-keys (gl-array gl-count) (map-key meshes mesh)
+                            (gl:bind-vertex-array gl-array)
+                            (gl:draw-arrays :triangles 0 gl-count)
+                          )
                         )
                       )
                     )

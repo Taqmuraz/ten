@@ -9,7 +9,6 @@ out vec3 worldNormal;
 uniform mat4 transform;
 uniform mat4 projection;
 
-const int MAX_TRANSFORMS = 100;
 uniform mat4 jointTransforms[MAX_TRANSFORMS];
 uniform mat4 jointOffsets[MAX_TRANSFORMS];
 

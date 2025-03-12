@@ -35,7 +35,6 @@
   (gl:enable :texture-2d :depth-test :cull-face)
   (gl:disable :color-material)
   (lets (
-      max-instances 1000
       shaders (hash
         :static (load-shader-to-gl
           (uiop:read-file-string "res/shaders/vertex.glsl")
@@ -45,15 +44,13 @@
           (uiop:read-file-string "res/shaders/skin_vertex.glsl")
           (uiop:read-file-string "res/shaders/fragment.glsl")
         )
-        :instancing-static (load-instancing-shader-to-gl
+        :instancing-static (load-shader-to-gl
           (uiop:read-file-string "res/shaders/instancing_vertex.glsl")
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
-          max-instances
         )
-        :instancing-skin (load-instancing-shader-to-gl
+        :instancing-skin (load-shader-to-gl
           (uiop:read-file-string "res/shaders/skin_instancing_vertex.glsl")
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
-          max-instances
         )
       )
       model (-> window res (map-key :file) load-model-data load-model-to-gl load-gl-group)

@@ -6,10 +6,10 @@ layout (location = 4) in vec4 weights;
 
 out vec2 uv;
 out vec3 worldNormal;
+flat out int id;
 uniform mat4 transforms[MAX_INSTANCES];
 uniform mat4 projection;
 
-const int MAX_TRANSFORMS = 100;
 uniform mat4 jointTransforms[MAX_TRANSFORMS * MAX_INSTANCES];
 uniform mat4 jointOffsets[MAX_TRANSFORMS];
 
@@ -17,7 +17,7 @@ void main (void)
 {
 	vec3 totalPos = vec3(0);
 	vec3 totalNormal = vec3(0);
-	int id = gl_InstanceID;
+	id = gl_InstanceID;
 	mat4 transform = transforms[id];
 
 	for (int i = 0; i < 4; i++)
