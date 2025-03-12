@@ -183,51 +183,20 @@
           map (-> anim :map)
           bones (-> anim :bones)
           keys (loop for i from 0 below frames-count collect (* len (/ i frames-count)))
-          frames (mapcar (sfun k cons k (cache-pose (map-key map k) bones)) keys)
-          frames (update-vals frames posef)
-          poses (assoc->tree frames #'< #'=)
+          poses (mapcar (sfun k cons k (cache-pose (map-key map k) bones)) keys)
+          poses (update-vals poses posef)
+          poses (assoc->tree poses #'< #'=)
           func (sfun k -> (find-bounds poses k #'<) car cdr)
         )
-        (with-vals anim :map func :frames frames)
+        (with-vals anim :map func)
       )
     )
   )
 )
 
-(defun vec-to-ptr (v lisp-type c-type)
-  (lets (
-      p (cffi:foreign-alloc c-type :count (length v))
-    )
-    (forvec (i e) v (setf (cffi:mem-aref p c-type i) (coerce e lisp-type)))
-    p
-  )
-)
+(defun pose-to-gl (pose) (update-vals pose #'mat-to-gl))
 
-(defun pose-to-gl (pose)
-  (update-vals pose
-    (sfun m lets (g (mat-to-gl m))
-      (make-assoc :gl g :ptr (vec-to-ptr g 'single-float :float)))))
-
-(defun anim-to-gl (anim) (cache-anim anim 60 :posefun #'pose-to-gl))
-
-(defun anims-to-gl-buffer (anims)
-  (lets (
-      ps (loop for a in anims append
-        (loop for f in (-> a :frames vals) append
-          (loop for b in (-> a :bones) collect
-            (map-key f b)
-          )
-        )
-      )
-      buf (first (gl:gen-buffers 1))
-      len (length ps)
-      base 2
-      b (list base buf)
-    )
-    (load-instancing-buffer b ps 16)
-    b
-  )
-)
+(defun anim-to-gl (anim) (cache-anim anim 120 :posefun #'pose-to-gl))
 
 (defun load-model-to-gl (data)
   (labels (
@@ -442,8 +411,6 @@
   )
 )
 
-(cffi:defcfun "memcpy" :pointer (dst :pointer) (src :pointer) (count :unsigned-int))
-
 (defun load-instancing-buffer (buffer data element-size)
   (lets (
       data (coerce data 'vector)
@@ -452,13 +419,9 @@
     )
     (cffi:with-foreign-object (p :float l)
       (forvec (i v) data
-        (typecase v
-          (vector (forvec (ei e) v
-            (setf (cffi:mem-aref p :float (+ ei (* i element-size)))
-              (coerce e 'single-float))))
-          (t (memcpy (cffi:inc-pointer p (* 4 i element-size)) v (* 4 element-size)))
-        )
-      )
+        (forvec (ei e) v
+          (setf (cffi:mem-aref p :float (+ ei (* i element-size)))
+            (coerce e 'single-float))))
       (setf d (gl:make-gl-array-from-pointer p :float l))
       (destructuring-bind (base buf) buffer
         (gl:bind-buffer :shader-storage-buffer buf)
@@ -504,7 +467,7 @@
                 (when bones
                   (lets (
                       ts (map 'vector (sfun pose map 'vector
-                        (sfun b -> (map-key pose (map-key b :name)) :ptr) bones) poses)
+                        (sfun b map-key pose (map-key b :name)) bones) poses)
                       ts (concat 'vector ts)
                       os (map 'vector (sfun b map-key b :matrix) bones)
                     )
@@ -528,7 +491,7 @@
                             (if bones
                               (map 'vector #'mat-to-gl roots)
                               (map 'vector
-                                (sfun (root pose) mat-to-gl (last-> node (map-key pose) :gl mat-from-gl
+                                (sfun (root pose) mat-to-gl (last-> node (map-key pose) mat-from-gl
                                   (mul-mat-4x4 root))) roots poses))
                             16
                           )
