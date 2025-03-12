@@ -72,19 +72,24 @@
       scene (-> window res :scene)
       anim (-> window res :anim)
       shaders (-> window res :shaders)
+      pose (animate anim time)
+      instances (with-stack-push mat-stack rot-mat
+        (loop for i from 0 below 500 collect
+          (make-assoc
+            :pose pose
+            :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
+          )
+        )
+      )
     )
     (gl:clear-color 1/2 1/2 1/2 1)
     (gl:clear :color-buffer-bit :depth-buffer-bit)
     (gl:viewport 0 0 w h)
-    (loop for i from 0 below 1
-      for offset = (mat-translation (mod i 10) -2 (floor i 10)) do
-      (with-stack-push mat-stack (mul-mat-4x4 offset rot-mat)
-        (-> window res :scene
-          (display-gl-group
-            shaders
-            :root (car mat-stack)
-            :proj proj-mat
-            :pose (animate anim time)))))
+    (-> window res :scene
+      (display-gl-group-instanced
+        shaders
+        instances
+        :proj proj-mat))
     (glut:swap-buffers)
   )
 )
