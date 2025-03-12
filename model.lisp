@@ -31,7 +31,7 @@
       (load-submesh (m)
         (make-assoc
           :verts (map 'vector (sfun v select-keys v 0 2 1) (ai:vertices m))
-          :normals (ai:normals m)
+          :normals (map 'vector (sfun v select-keys v 0 2 1) (ai:normals m))
           :uvs (-> m ai:texture-coords (map-key 0))
           :faces (-> m ai:faces triangulate)
           :material (ai:material-index m)

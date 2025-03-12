@@ -46,7 +46,7 @@
         )
       )
       model (-> window res (map-key :file) load-model-data load-model-to-gl load-gl-group)
-      anim (-> model :anims vals first)
+      anim (-> model :anims vals second)
     )
     (setf (res window) (hash :scene model :anim anim :shaders shaders))
   )
@@ -60,15 +60,14 @@
       time (get-time)
       proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
       mat-stack (list (mat-translation 0 0 5))
-      rot-mat (mat-rotation 0 (* time pi 1/8) 0)
+      rot-mat (mat-rotation 0 (* time pi 1/2) 0)
       scene (-> window res :scene)
       anim (-> window res :anim)
       shaders (-> window res :shaders)
-      pose (animate anim time)
       instances (with-stack-push mat-stack rot-mat
-        (loop for i from 0 below 1000 collect
+        (loop for i from 0 below 500 collect
           (make-assoc
-            :pose pose
+            :pose (animate anim (+ time (/ i 50)))
             :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
           )
         )

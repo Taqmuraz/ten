@@ -32,13 +32,13 @@ void main (void)
 		int j = int(joints[i]);
 		if (j != -1)
 		{
-		  mat4 t = transform * jointTransforms[j + (id * int(bones))] * jointOffsets[j];
+		  mat4 t = jointTransforms[j + (id * int(bones))] * jointOffsets[j];
 			totalPos += (t * vec4(position, 1)).xyz * weights[i];
 			totalNormal += (t * vec4(normal, 0)).xyz * weights[i];
 		}
 	}
 	
-	gl_Position = projection * vec4(totalPos, 1);
+	gl_Position = projection * transform * vec4(totalPos, 1);
 	uv = texcoord;
-	worldNormal = normalize(totalNormal);
+	worldNormal = normalize((transform * vec4(totalNormal, 0)).xyz);
 }
