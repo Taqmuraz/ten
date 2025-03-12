@@ -50,7 +50,7 @@
           (mul-mats-4x4 flip m flip)
         )
       )
-      (load-matrix (m) (-> m mat-from-gl flip-matrix-yz))
+      (load-matrix (m) (-> m mat-from-gl transponed flip-matrix-yz))
       (load-tree (node)
         (make-assoc
           :name (-> node ai:name keyword-of)

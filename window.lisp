@@ -68,7 +68,7 @@
       time (get-time)
       proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
       mat-stack (list (mat-translation 0 0 5))
-      rot-mat (mat-rotation 0 pi 0)
+      rot-mat (mat-rotation 0 (* time pi 1/8) 0)
       scene (-> window res :scene)
       anim (-> window res :anim)
       shaders (-> window res :shaders)
