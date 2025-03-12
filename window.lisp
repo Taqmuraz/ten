@@ -47,9 +47,8 @@
       )
       model (-> window res (map-key :file) load-model-data load-model-to-gl load-gl-group)
       anim (-> model :anims vals first)
-      buffers (alloc-instancing-buffers)
     )
-    (setf (res window) (hash :scene model :anim anim :shaders shaders :buffers buffers))
+    (setf (res window) (hash :scene model :anim anim :shaders shaders))
   )
 )
 
@@ -65,7 +64,6 @@
       scene (-> window res :scene)
       anim (-> window res :anim)
       shaders (-> window res :shaders)
-      buffers (-> window res :buffers)
       pose (animate anim time)
       instances (with-stack-push mat-stack rot-mat
         (loop for i from 0 below 1000 collect
@@ -82,7 +80,6 @@
     (-> window res :scene
       (display-gl-group-instanced
         shaders
-        buffers
         instances
         :proj proj-mat))
     (glut:swap-buffers)

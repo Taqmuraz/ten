@@ -443,10 +443,11 @@
   )
 )
 
-(defun display-gl-group-instanced (group shaders buffers instances &key (proj (mat-identity 4))
+(defun display-gl-group-instanced (group shaders instances &key (proj (mat-identity 4))
                                                                 (light #(0 -1 0)))
   (with-map-keys (meshes (tpose :pose) shader-groups) group
     (lets (
+        buffers (alloc-instancing-buffers)
         instances (coerce instances 'vector)
         len (length instances)
         poses (map 'vector (sfun i last-> i :pose (merge-into 'hash-table tpose)) instances)
@@ -508,6 +509,7 @@
           )
         )
       )
+      (gl:delete-buffers (mapcar #'second (vals buffers)))
     )
   )
   (gl:bind-texture :texture-2d 0)
