@@ -32,9 +32,9 @@ void main (void)
 		int j = int(joints[i]);
 		if (j != -1)
 		{
-		  mat4 t = jointTransforms[j + (id * int(bones))] * jointOffsets[j];
-			totalPos += (transform * t * vec4(position, 1)).xyz * weights[i];
-			totalNormal += (transform * t * vec4(normal, 0)).xyz * weights[i];
+		  mat4 t = transform * jointTransforms[j + (id * int(bones))] * jointOffsets[j];
+			totalPos += (t * vec4(position, 1)).xyz * weights[i];
+			totalNormal += (t * vec4(normal, 0)).xyz * weights[i];
 		}
 	}
 	

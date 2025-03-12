@@ -68,7 +68,7 @@
       buffers (-> window res :buffers)
       pose (animate anim time)
       instances (with-stack-push mat-stack rot-mat
-        (loop for i from 0 below 500 collect
+        (loop for i from 0 below 1000 collect
           (make-assoc
             :pose pose
             :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
