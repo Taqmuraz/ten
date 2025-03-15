@@ -1,8 +1,8 @@
 (in-package #:ten)
 
 (defclass window (glut:window) (
-    (state :accessor state :initarg :state)
-    (res :accessor res :initarg :res)
+    (setup :accessor setup :initarg :setup)
+    (setup-func :accessor setup-func :initarg :setup-func)
   )
   (:default-initargs
     :width 800
@@ -34,62 +34,31 @@
   (gl:cull-face :back)
   (gl:enable :texture-2d :depth-test :cull-face)
   (gl:disable :color-material)
-  (lets (
-      shaders (hash
-        :instancing-static (load-shader-to-gl
-          (uiop:read-file-string "res/shaders/instancing_vertex.glsl")
-          (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
-        )
-        :instancing-skin (load-shader-to-gl
-          (uiop:read-file-string "res/shaders/skin_instancing_vertex.glsl")
-          (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
-        )
-      )
-      model (-> window res (map-key :file) load-model-data load-model-to-gl load-gl-group)
-      anim (-> model :anims vals second)
-      state (make-assoc
-        :campos #(0 0 -5)
-      )
-    )
-    (setf (res window) (hash :scene model :anim anim :shaders shaders))
-    (setf (state window) state)
-  )
+  (setf (setup window) (-> window setup-func funcall))
 )
 
 (defmethod glut:display ((window window))
   (setf (glut:title window) (format nil "ten, fps = ~A" (fps)))
-  (with-maps-keys (((scene anim shaders) (res window))
-                   ((campos) (state window)))
-    (lets (
-        state (state window)
-        w (glut:width window)
-        h (glut:height window)
-        time (get-time)
-        proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-        mat-stack (last-> campos v- (applyv #'mat-translation) list)
-        rot-mat (mat-rotation 0 pi 0)
-        instances (with-stack-push mat-stack rot-mat
-          (loop for i from 0 below 1000 collect
-            (make-assoc
-              :anim (make-assoc :index 1 :time (+ time (/ i 50)) :length (-> anim :length))
-              :pose (animate anim (+ time (/ i 50)))
-              :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
-            )
+  (lets (setup (setup window))
+    (with-map-keys (res state display next time) setup
+      (lets (
+          last-time (if time time (get-time))
+          time (get-time)
+          dev (make-assoc
+            :width (glut:width window)
+            :height (glut:height window)
+            :time time
+            :delta-time (- time last-time)
+          )
+          state (funcall next dev res state)
+          setup (with-vals setup
+            :time time
+            :state state
           )
         )
-        state (update state (sfun c v+ c (wasd-xz)) :campos)
+        (funcall display dev res state)
+        (setf (setup window) setup)
       )
-      (gl:clear-color 1/2 1/2 1/2 1)
-      (gl:clear :color-buffer-bit :depth-buffer-bit)
-      (gl:viewport 0 0 w h)
-      (-> window res :scene
-        (display-gl-group-instanced
-          shaders
-          instances
-          :proj proj-mat))
-      (glut:swap-buffers)
-      (refresh-keyboard)
-      (setf (state window) state)
     )
   )
 )
