@@ -1,6 +1,6 @@
 (in-package #:ten)
 
-(defun demo-res (file)
+(defun demo-instancing-res (file)
   (lets (
       shaders (hash
         :instancing-static (load-shader-to-gl
@@ -19,22 +19,22 @@
   )
 )
 
-(defun demo-setup (file)
+(defun demo-instancing-setup (file)
   (make-assoc
-    :res (demo-res file)
+    :res (demo-instancing-res file)
     :state (make-assoc :campos (vector 0 0 -5))
-    :next 'demo-next
-    :display 'demo-display
+    :next 'demo-instancing-next
+    :display 'demo-instancing-display
   )
 )
 
-(defun demo-next (dev res state)
+(defun demo-instancing-next (dev res state)
   (with-map-keys ((dt :delta-time)) dev
     (update state (sfun c -> (wasd-xz) (v* (repeat 'vector 3 (* 10 dt))) (v+ c)) :campos)
   )
 )
 
-(defun demo-display (dev res state)
+(defun demo-instancing-display (dev res state)
   (with-maps-keys (((scene anim shaders) res)
                    ((campos) state)
                    (((w :width) (h :height) time) dev))
@@ -66,6 +66,6 @@
   )
 )
 
-(defun start-instancing-demo (file)
-  (glut:display-window (make-instance 'window :setup-func (mpart demo-setup file)))
+(defun start-demo-instancing (file)
+  (glut:display-window (make-instance 'window :setup-func (mpart demo-instancing-setup file)))
 )
