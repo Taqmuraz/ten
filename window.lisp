@@ -47,42 +47,50 @@
       )
       model (-> window res (map-key :file) load-model-data load-model-to-gl load-gl-group)
       anim (-> model :anims vals second)
+      state (make-assoc
+        :campos #(0 0 -5)
+      )
     )
     (setf (res window) (hash :scene model :anim anim :shaders shaders))
+    (setf (state window) state)
   )
 )
 
 (defmethod glut:display ((window window))
   (setf (glut:title window) (format nil "ten, fps = ~A" (fps)))
-  (lets (
-      w (glut:width window)
-      h (glut:height window)
-      time (get-time)
-      proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-      mat-stack (list (mat-translation 0 0 5))
-      rot-mat (mat-rotation 0 pi 0)
-      scene (-> window res :scene)
-      anim (-> window res :anim)
-      shaders (-> window res :shaders)
-      instances (with-stack-push mat-stack rot-mat
-        (loop for i from 0 below 1000 collect
-          (make-assoc
-            :anim (make-assoc :index 1 :time (+ time (/ i 50)) :length (-> anim :length))
-            :pose (animate anim (+ time (/ i 50)))
-            :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
+  (with-maps-keys (((scene anim shaders) (res window))
+                   ((campos) (state window)))
+    (lets (
+        state (state window)
+        w (glut:width window)
+        h (glut:height window)
+        time (get-time)
+        proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
+        mat-stack (last-> campos v- (applyv #'mat-translation) list)
+        rot-mat (mat-rotation 0 pi 0)
+        instances (with-stack-push mat-stack rot-mat
+          (loop for i from 0 below 1000 collect
+            (make-assoc
+              :anim (make-assoc :index 1 :time (+ time (/ i 50)) :length (-> anim :length))
+              :pose (animate anim (+ time (/ i 50)))
+              :root (mul-mat-4x4 (mat-translation (- 5 (mod i 10)) -3 (floor i 10)) (car mat-stack))
+            )
           )
         )
+        state (update state (sfun c v+ c (wasd-xz)) :campos)
       )
+      (gl:clear-color 1/2 1/2 1/2 1)
+      (gl:clear :color-buffer-bit :depth-buffer-bit)
+      (gl:viewport 0 0 w h)
+      (-> window res :scene
+        (display-gl-group-instanced
+          shaders
+          instances
+          :proj proj-mat))
+      (glut:swap-buffers)
+      (refresh-keyboard)
+      (setf (state window) state)
     )
-    (gl:clear-color 1/2 1/2 1/2 1)
-    (gl:clear :color-buffer-bit :depth-buffer-bit)
-    (gl:viewport 0 0 w h)
-    (-> window res :scene
-      (display-gl-group-instanced
-        shaders
-        instances
-        :proj proj-mat))
-    (glut:swap-buffers)
   )
 )
 
@@ -93,4 +101,34 @@
 
 (defmethod glut:idle ((window window))
   (glut:post-redisplay)
+)
+
+(defmethod glut:visibility ((window window) state)
+  (cases state
+    :visible (glut:enable-event window :idle)
+    t (glut:disable-event window :idle)
+  )
+)
+
+(lets (
+    keys (hash)
+  )
+  (defmethod glut:keyboard ((window window) key x y)
+    (setf (gethash key keys) :down)
+  )
+  (defun refresh-keyboard ()
+    (setf keys (update-vals keys (sfun s cases s :down :up t nil)))
+  )
+  (defun key-state (key)
+    (map-key keys key)
+  )
+  (defun wasd-xz ()
+    (lets (r (vector 0 0 0))
+      (when (key-state #\w) (incf (aref r 2) 1))
+      (when (key-state #\a) (incf (aref r 0) -1))
+      (when (key-state #\s) (incf (aref r 2) -1))
+      (when (key-state #\d) (incf (aref r 0) 1))
+      r
+    )
+  )
 )
