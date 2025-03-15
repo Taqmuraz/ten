@@ -27,6 +27,7 @@
     (:file "shader")
     (:file "geom")
     (:file "demo-instancing")
+    (:file "demo-game")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"
