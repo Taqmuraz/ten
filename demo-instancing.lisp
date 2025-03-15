@@ -1,5 +1,3 @@
-;;;; ten.lisp
-
 (in-package #:ten)
 
 (defun demo-res (file)
@@ -68,6 +66,6 @@
   )
 )
 
-(defun start-demo (file)
+(defun start-instancing-demo (file)
   (glut:display-window (make-instance 'window :setup-func (mpart demo-setup file)))
 )

@@ -22,11 +22,11 @@
     (:file "package")
     (:file "stack")
     (:file "texture")
-    (:file "ten")
     (:file "model")
     (:file "window")
     (:file "shader")
     (:file "geom")
+    (:file "demo-instancing")
   )
   :build-operation "program-op"
   :build-pathname "ten-build"
