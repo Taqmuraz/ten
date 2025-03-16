@@ -53,8 +53,16 @@
 )
 
 (defun demo-game-next (dev res state)
-  (with-map-keys ((dt :delta-time)) dev
-    (update state (sfun c -> (wasd-xz) (v* (repeat 'vector 3 (* 10 dt))) (v+ c)) :campos)
+  (with-maps-keys (
+      (((dt :delta-time)) dev)
+      ((campos camrot) state)
+    )
+    (lets (
+        cammat (applyv 'mat-rotation camrot)
+        mov (last-> dt (* 10) (repeat 'vector 3) (v* (wasd-xz)) (transform-vector cammat))
+      )
+      (update state (mpart v+ mov) :campos)
+    )
   )
 )
 

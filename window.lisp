@@ -16,18 +16,25 @@
   (float (/ (get-internal-real-time) (float internal-time-units-per-second)))
 )
 
-(defparameter *fps* 0)
-(defparameter *last-fps-sec* 0)
-(defparameter *last-fps* 0)
-(defun fps ()
-  (lets (s (floor (get-time)))
-    (if (= *last-fps-sec* s)
-      (progn (incf *fps* 1) *last-fps*)
-      (progn
-        (setf *last-fps* *fps*)
-        (setf *last-fps-sec* s)
-        (setf *fps* 1)
-        *last-fps*))))
+(lets (
+    fps 0
+    last-fps-sec 0
+    last-fps 0
+  )
+  (defun fps ()
+    (lets (s (floor (get-time)))
+      (if (= last-fps-sec s)
+        (progn (incf fps 1) last-fps)
+        (progn
+          (setf last-fps fps)
+          (setf last-fps-sec s)
+          (setf fps 1)
+          last-fps
+        )
+      )
+    )
+  )
+)
 
 (defmethod glut:display-window :before ((window window))
   (gl:polygon-mode :front :fill)
