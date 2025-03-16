@@ -59,7 +59,7 @@
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
-        mov (last-> dt (* 10) (repeat 'vector 3) (v* (wasd-xz)) (transform-vector cammat))
+        mov (last-> dt (* 10) (repeat 'vector 3) (v* (wasd-xyz)) (transform-vector cammat))
       )
       (update state (mpart v+ mov) :campos)
     )
@@ -94,8 +94,6 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
-      (glut:swap-buffers)
-      (refresh-keyboard)
     )
   )
 )

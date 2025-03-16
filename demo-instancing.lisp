@@ -30,7 +30,7 @@
 
 (defun demo-instancing-next (dev res state)
   (with-map-keys ((dt :delta-time)) dev
-    (update state (sfun c -> (wasd-xz) (v* (repeat 'vector 3 (* 10 dt))) (v+ c)) :campos)
+    (update state (sfun c -> (wasd-xyz) (v* (repeat 'vector 3 (* 10 dt))) (v+ c)) :campos)
   )
 )
 
@@ -60,8 +60,6 @@
         shaders
         instances
         :proj proj-mat)
-      (glut:swap-buffers)
-      (refresh-keyboard)
     )
   )
 )
