@@ -13,7 +13,17 @@
         )
       )
       level-data (-> "res/castle/castle.fbx" load-model-data)
-      player-pos (-> level-data :pose :|entry| (map-key 3) (take 3))
+      pose-keys (concatenate 'list
+        (list :|entry|)
+        (loop for i from 0 to 5 collect (keyword-of "guard_" (into-string i)))
+        (loop for i from 0 to 5 collect (keyword-of "int_" (into-string i)))
+        (loop for i from 0 to 7 collect (keyword-of "nav_" (into-string i)))
+      )
+      player-poses (last-> pose-keys
+        (apply #'select-vals (-> level-data :pose))
+        (map-by-key 'list 3)
+        (mapcar (sfun x take x 3))
+      )
       level-model (-> level-data load-model-to-gl load-gl-group)
       player-model (-> "res/chars/archer_anims.fbx" load-model-data load-model-to-gl load-gl-group)
       player-anims (-> player-model :anims vals into-vector)
@@ -22,7 +32,7 @@
       :level-model level-model
       :player-model player-model
       :player-anims player-anims
-      :player-pos player-pos
+      :player-poses player-poses
       :shaders shaders
     )
   )
@@ -37,14 +47,14 @@
 (defun demo-game-setup ()
   (lets (
       res (demo-game-res)
-      player-pos (-> res :player-pos)
+      player-poses (-> res :player-poses)
     )
     (make-assoc
       :res res
       :state (make-assoc
-        :campos (v+ player-pos (vector 1 2 4))
+        :campos (v+ (car player-poses) (vector 1 2 4))
         :camrot (vector 0 pi 0)
-        :player (demo-game-player player-pos)
+        :players (mapcar #'demo-game-player player-poses)
       )
       :next 'demo-game-next
       :display 'demo-game-display
@@ -68,15 +78,14 @@
 
 (defun demo-game-display (dev res state)
   (with-maps-keys (((level-model player-model player-anims shaders) res)
-                   ((campos camrot player) state)
-                   ((pos) player)
+                   ((campos camrot players) state)
                    (((w :width) (h :height) time) dev))
     (lets (
         proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
         mat-stack (list (mat-pos-rot-inversed campos camrot))
         anim (map-key player-anims 0)
-        instances (with-stack-push mat-stack (applyv 'mat-translation pos)
-          (list
+        instances (loop for pos in (map-by-key 'list :pos players) collect
+          (with-stack-push mat-stack (applyv 'mat-translation pos)
             (make-assoc
               :root (car mat-stack)
               :pose (animate anim time)
