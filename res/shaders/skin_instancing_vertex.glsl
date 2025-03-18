@@ -33,6 +33,10 @@ layout(binding = 12, std430) readonly buffer ssbo8 {
     mat4 anims[];
 };
 
+mat4 lerp(mat4 a, mat4 b, float p) {
+  return a + (b - a) * p;
+}
+
 void main (void)
 {
 	vec3 totalPos = vec3(0);
@@ -42,9 +46,13 @@ void main (void)
 	int anim = int(animInds[id]);
 	float animTime = times[id];
 	float animLen = animLens[id];
-	int animFrame = int(floor(animTime / animLen * frames));
-	animFrame = int(floor(animFrame - (frames * floor(animFrame / frames))));
-	if (animFrame >= frames) animFrame = 0;
+	float animFrame = (animTime / animLen * frames);
+	float animF = animFrame - (frames * floor(animFrame / frames));
+	if (animF >= frames) animF -= frames;
+	int low = int(floor(animF));
+	int high = int(ceil(animF));
+	if (high >= frames) high = 0;
+	float param = animF - low;
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -52,7 +60,11 @@ void main (void)
 		if (j != -1)
 		{
 		  int b = int(shift[j]);
-		  mat4 t = anims[b + int(anim * frames + animFrame) * int(bones)] * jointOffsets[j];
+		  int l = b + int(anim * frames + low) * int(bones);
+		  int h = b + int(anim * frames + high) * int(bones);
+		  mat4 tl = anims[l];
+		  mat4 th = anims[h];
+		  mat4 t = lerp(tl, th, param) * jointOffsets[j];
 			totalPos += (t * vec4(position, 1)).xyz * weights[i];
 			totalNormal += (t * vec4(normal, 0)).xyz * weights[i];
 		}

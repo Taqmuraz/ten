@@ -194,7 +194,7 @@
   )
 )
 
-(defparameter *anim-frames* 120)
+(defparameter *anim-frames* 30)
 
 (defun anims-to-gl-buffer (anims pose bones)
   (lets (
