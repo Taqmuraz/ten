@@ -69,7 +69,7 @@
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
-        mov (last-> dt (* 10) (repeat 'vector 3) (v* (wasd-xyz)) (transform-vector cammat))
+        mov (transform-vector cammat (v* (wasd-xyz) (v3 dt) (v3 10)))
       )
       (update state (mpart v+ mov) :campos)
     )
