@@ -26,6 +26,7 @@
     (:file "window")
     (:file "shader")
     (:file "geom")
+    (:file "phys")
     (:file "demo-instancing")
     (:file "demo-game")
   )
