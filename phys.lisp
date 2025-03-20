@@ -9,14 +9,28 @@
     (when (<= dist 0)
       (lets (
           dir (norm d)
-          ap (-> dir v- (v* (vvv a-rad)) (v+ a-center))
-          bp (-> dir (v* (vvv b-rad)) (v+ b-center))
+          an dir
+          bn (v- dir)
+          ap (-> bn (v* (vvv a-rad)) (v+ a-center))
+          bp (-> an (v* (vvv b-rad)) (v+ b-center))
         )
         (make-assoc
           :dist dist
-          :point (v/ (v+ ap bp) (vvv 2))
+          :point-a ap
+          :point-b bp
+          :normal-a an
+          :normal-b bn
         )
       )
     )
+  )
+)
+
+(defun sphere-vs-triangle (rad center a b c)
+  (lets (
+      tnorm (norm (cross (v- a b) (v- c b)))
+      on-plane (-> center (v- a) (dot tnorm) vvv (v* tnorm) (last-> (v- center)))
+    )
+    on-plane
   )
 )
