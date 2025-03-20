@@ -1,6 +1,17 @@
 sudo apt install libassimp5 libfreeimage3 freeglut3 libglu1-mesa
-(mkdir ~/projects;
+(mkdir -p ~/projects;
   cd ~/projects;
+  git clone https://codeberg.org/lulook/taclib;
+)
+(mkdir -p ~/projects/forks;
+  cd ~/projects/forks;
+  git clone https://codeberg.org/lulook/alexandria;
+  git clone https://codeberg.org/lulook/babel;
+  git clone https://codeberg.org/lulook/cffi;
+  git clone https://codeberg.org/lulook/classimp;
+  git clone https://codeberg.org/lulook/cl-opengl;
+  git clone https://codeberg.org/lulook/eager-future2;
+  git clone https://codeberg.org/lulook/float-features;
   git clone https://codeberg.org/lulook/freeimage;
-  git clone https://codeberg.org/lulook/taclib
-  git clone https://codeberg.org/lulook/cl-opengl)
+  git clone https://codeberg.org/lulook/rtg-math;
+)
