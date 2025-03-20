@@ -27,10 +27,37 @@
 )
 
 (defun sphere-vs-triangle (rad center a b c)
-  (lets (
-      tnorm (norm (cross (v- a b) (v- c b)))
-      on-plane (-> center (v- a) (dot tnorm) vvv (v* tnorm) (last-> (v- center)))
+  (labels (
+      (col (v) (make-array (length v)
+        :element-type 'single-float
+        :initial-contents (loop for e across v collect (coerce e 'single-float))
+      ))
+      (vcol (v) (col (concatenate 'vector v '(0))))
     )
-    on-plane
+    (lets (
+        tnorm (norm (cross (v- a b) (v- c b)))
+        dst (-> center (v- a) (dot tnorm) abs (- rad))
+      )
+      (when (<= dst 0)
+        (lets (
+            tmat (rtg-math.matrix4:from-columns
+              (vcol (v- a center))
+              (vcol (v- b center))
+              (vcol (v- c center))
+              (col #(0 0 0 1))
+            )
+            inv (-> tmat rtg-math.matrix4:inverse vec-16->mat-4x4)
+            p (transform-vector inv (v- tnorm))
+          )
+          (when (not (at-least-one p (sfun e < e 0)))
+            (make-assoc
+              :dist dst
+              :point (v+ center (v* tnorm (vvv (- 0 dst rad))))
+              :normal tnorm
+            )
+          )
+        )
+      )
+    )
   )
 )
