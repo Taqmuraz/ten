@@ -61,3 +61,55 @@
     )
   )
 )
+
+(defun cover-with-bounds (bounds p)
+  (destructuring-bind (min max) bounds
+    (list (vmin min p) (vmax max p))
+  )
+)
+
+(defun triangle-bounds (a b c)
+  (list (vmin a b c) (vmax a b c))
+)
+
+(defun combine-bounds (a b)
+  (mapcar #'funcall (list #'vmin #'vmax) a b)
+)
+
+(defun mesh-shape (mesh transform)
+  (with-map-keys (faces verts) mesh
+    (lets (
+        tris (map 'vector (sfun f map 'list (sfun e transform-point transform (aref verts e)) f) faces)
+        bounds (applyv #'triangle-bounds (map-key tris 0 (-> 0 vvv vvv)))
+      )
+      (loop for (a b c) across tris do
+        (setf bounds (combine-bounds bounds (triangle-bounds a b c)))
+      )
+      (make-assoc :kind :mesh :bounds bounds :triangles tris)
+    )
+  )
+)
+
+(defun model-shape (model)
+  (lets (r nil)
+    (with-map-keys (tree pose meshes) model
+      (labels (
+          (walk (node)
+            (with-map-keys (name (nums :meshes) children) node
+              (loop for n across nums do
+                (push (mesh-shape (map-key meshes n) (map-key pose name)) r)
+              )
+              (mapc #'walk children)
+            )
+          )
+        )
+        (walk tree)
+        (make-assoc
+          :kind :mesh
+          :triangles (last-> r (mapcar (sfun m -> m :triangles)) (concat 'vector))
+          :bounds (reduce #'combine-bounds (mapcar (sfun m -> m :bounds) r))
+        )
+      )
+    )
+  )
+)
