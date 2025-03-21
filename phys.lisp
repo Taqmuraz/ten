@@ -84,6 +84,10 @@
   (mapcar #'v* a b)
 )
 
+(defun bounds-from-min-size (min size)
+  (list min (v+ min size))
+)
+
 (defun bounds-volume (b)
   (destructuring-bind (min max) b
     (apply #'* (l- max min))
@@ -149,8 +153,17 @@
             max (cadr bounds)
             diff (v- max min)
             cuts (loop for offset in
-              '((0 0 0) (1 0 0) (0 1 0) (1 1 0) (0 0 1) (1 0 1) (0 1 1) (1 1 1))
-              collect (list
+              '(
+                (0 0 0)
+                (1 0 0)
+                (1 1 0)
+                (0 1 0)
+                (0 0 1)
+                (1 0 1)
+                (1 1 1)
+                (0 1 1)
+              )
+              collect (bounds-from-min-size
                 (v+ min (v* diff offset (vvv 1/2)))
                 (v* diff (vvv 1/2))
               )
