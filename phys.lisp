@@ -136,45 +136,57 @@
   )
 )
 
-(defun shapes-tree (shapes &key (bounds nil) (cap 10) (depth 0) (max-depth 5))
-  (lets (
-      bounds (if bounds bounds (apply #'combine-bounds (map-by-key 'list :bounds shapes)))
-    )
-    (if (or (>= depth max-depth) (-> shapes length (<= cap)))
-      (make-assoc
-        :shapes shapes
-        :children nil
+(defun shapes-tree (shapes)
+  (labels (
+      (give-shapes-id (shapes)
+        (mapcar (sfun (s i) with-vals s :id i) shapes (-> shapes length list-range))
       )
-      (make-assoc
-        :shapes nil
-        :children
+      (walk-tree (shapes &key (bounds nil) (cap 10) (depth 0) (max-depth 5))
         (lets (
-            min (car bounds)
-            max (cadr bounds)
-            diff (v- max min)
-            cuts (loop for offset in
-              '(
-                (0 0 0)
-                (1 0 0)
-                (1 1 0)
-                (0 1 0)
-                (0 0 1)
-                (1 0 1)
-                (1 1 1)
-                (0 1 1)
-              )
-              collect (bounds-from-min-size
-                (v+ min (v* diff offset (vvv 1/2)))
-                (v* diff (vvv 1/2))
+            bounds (if bounds bounds (apply #'combine-bounds (map-by-key 'list :bounds shapes)))
+          )
+          (if (or (>= depth max-depth) (-> shapes length (<= cap)))
+            (make-assoc
+              :shapes (map-by-key 'list :id shapes)
+              :children nil
+            )
+            (make-assoc
+              :shapes nil
+              :children
+              (lets (
+                  min (car bounds)
+                  max (cadr bounds)
+                  diff (v- max min)
+                  cuts (loop for offset in
+                    '(
+                      (0 0 0)
+                      (1 0 0)
+                      (1 1 0)
+                      (0 1 0)
+                      (0 0 1)
+                      (1 0 1)
+                      (1 1 1)
+                      (0 1 1)
+                    )
+                    collect (bounds-from-min-size
+                      (v+ min (v* diff offset (vvv 1/2)))
+                      (v* diff (vvv 1/2))
+                    )
+                  )
+                )
+                (loop for cut in cuts
+                  for ss = (remove-if-not (sfun s -> s :bounds (bounds-intersectp cut)) shapes)
+                  collect (walk-tree ss :bounds cut :cap cap :depth (+ 1 depth))
+                )
               )
             )
           )
-          (loop for cut in cuts
-            for ss = (remove-if-not (sfun s -> s :bounds (bounds-intersectp cut)) shapes)
-            collect (shapes-tree ss :bounds cut :cap cap :depth (+ 1 depth))
-          )
         )
       )
+    )
+    (make-assoc
+      :shapes (into-vector shapes)
+      :tree (-> shapes give-shapes-id walk-tree)
     )
   )
 )
