@@ -7,6 +7,7 @@ sudo apt install libassimp5 libfreeimage3 freeglut3 libglu1-mesa
   cd ~/projects/forks;
   git clone https://codeberg.org/lulook/alexandria;
   git clone https://codeberg.org/lulook/babel;
+  git clone https://codeberg.org/lulook/bordeaux-threads;
   git clone https://codeberg.org/lulook/cffi;
   git clone https://codeberg.org/lulook/classimp;
   git clone https://codeberg.org/lulook/cl-opengl;
