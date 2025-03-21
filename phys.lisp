@@ -143,7 +143,11 @@
       )
       (walk-tree (shapes &key (bounds nil) (cap 10) (depth 0) (max-depth 5))
         (lets (
-            bounds (if bounds bounds (apply #'combine-bounds (map-by-key 'list :bounds shapes)))
+            bounds (conds
+              bounds bounds
+              (cdr shapes) (apply #'combine-bounds (map-by-key 'list :bounds shapes))
+              t `((0 0 0)(0 0 0))
+            )
           )
           (if (or (>= depth max-depth) (-> shapes length (<= cap)))
             (make-assoc
