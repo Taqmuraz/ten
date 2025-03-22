@@ -135,7 +135,7 @@
       (make-assoc
         :kind :mesh
         :bounds bounds
-        :triangles triangles
+        :triangles tris
       )
     )
   )
@@ -257,14 +257,17 @@
 )
 
 (defun shapes-tree-contacts (shapes-tree)
-  (lets (r nil)
+  (lets (r nil c (hash))
     (with-map-keys (shapes tree) shapes-tree
       (labels (
           (walk-tree (node)
             (with-map-keys ((ids :shapes) children) node
-              (loop for (id1 id2) in (all-possible-pairs ids) do
-                (with-map-keys ((s1 id1) (s2 id2)) shapes
-                  (push-when or (shapes-contact s1 s2) r)
+              (loop for (id1 id2) in (all-possible-pairs ids)
+                for p = (list id1 id2)
+                do (hash-once p c
+                  (with-map-keys ((s1 id1) (s2 id2)) shapes
+                    (push-when or (shapes-contact s1 s2) r)
+                  )
                 )
               )
               (mapc #'walk-tree children)
