@@ -12,7 +12,7 @@
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
         )
       )
-      level-data (-> "res/castle/castle.fbx" load-model-data)
+      level-data (-> "res/castle/castle_desert.fbx" load-model-data)
       pose-keys (concatenate 'list
         (list :|entry|)
         (loop for i from 0 to 5 collect (keyword-of "guard_" (into-string i)))
@@ -47,7 +47,20 @@
 )
 
 (defun move-player (player mov)
-  (update player (sfun s update s (sfun c v+ c mov) :center) :shape)
+  (update player
+    (sfun s with-map-keys (radius center bounds) s
+      (lets (
+          center (v+ center mov)
+          bounds (sphere-bounds radius center)
+        )
+        (with-vals s
+          :center center
+          :bounds bounds
+        )
+      )
+    )
+    :shape
+  )
 )
 
 (defun player-pos (player)
@@ -95,7 +108,7 @@
   )
 )
 
-(defun debug-level-shapes (level-shapes campos camrot proj)
+(defun debug-level-shapes (player level-shapes campos camrot proj)
   (gl:matrix-mode :projection)
   (gl:load-identity)
   (-> proj mat-4x4->vec-16 gl:mult-matrix)
@@ -105,15 +118,21 @@
     (-> (mat-pos-rot-inversed campos camrot) mat-4x4->vec-16 gl:mult-matrix)
     (gl:with-primitives :lines
       (gl:color 0 0 1 1)
-      (loop for s in level-shapes do
-        (loop for f across (-> s :triangles) do
-          (with-items (a b c) f
-            (applyv #'gl:vertex a)
-            (applyv #'gl:vertex b)
-            (applyv #'gl:vertex a)
-            (applyv #'gl:vertex c)
-            (applyv #'gl:vertex b)
-            (applyv #'gl:vertex c)
+      (with-maps-keys (((shape) player)
+                       ((bounds) shape))
+        (loop for s in level-shapes do
+          (when (bounds-intersectp (-> s :bounds) bounds)
+            (gl:color 0 1 0 1)
+            (loop for f across (-> s :triangles) do
+              (with-items (a b c) f
+                (applyv #'gl:vertex a)
+                (applyv #'gl:vertex b)
+                (applyv #'gl:vertex a)
+                (applyv #'gl:vertex c)
+                (applyv #'gl:vertex b)
+                (applyv #'gl:vertex c)
+              )
+            )
           )
         )
       )
@@ -149,7 +168,7 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
-      (debug-level-shapes (-> res :level-shapes) campos camrot proj-mat)
+      (debug-level-shapes player (-> res :level-shapes) campos camrot proj-mat)
     )
   )
 )
