@@ -115,14 +115,6 @@
   )
 )
 
-(defun triangle-shape (points)
-  (make-assoc
-    :kind :triangle
-    :points points
-    :bounds (apply #'triangle-bounds points)
-  )
-)
-
 (defun mesh-shape (mesh transform)
   (with-map-keys (faces verts) mesh
     (lets (
@@ -225,15 +217,9 @@
 (defun shapes-contact (a b)
   (labels (
       (svm (a b)
-        (with-maps-keys (((radius center) a)
-                         ((triangles) b))
-          (sphere-vs-mesh radius center triangles)
-        )
-      )
-      (svt (a b)
-        (with-maps-keys (((radius center) a)
-                         ((points) b))
-          (apply #'sphere-vs-triangle radius center points)
+        (with-maps-keys (((radius center (abounds :bounds)) a)
+                         ((triangles (bbounds :bounds)) b))
+          (when (bounds-intersectp abounds bbounds) (sphere-vs-mesh radius center triangles))
         )
       )
       (svs (a b)
@@ -247,8 +233,6 @@
                      (((bkind :kind)) b))
       (cases-equal (list akind bkind)
         '(:sphere :sphere) (svs a b)
-        '(:sphere :triangle) (svt a b)
-        '(:triangle :sphere) (svt b a)
         '(:sphere :mesh) (svm a b)
         '(:mesh :sphere) (svm b a)
       )
