@@ -95,9 +95,9 @@
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
-        mov (transform-vector cammat (v* (wasd-xyz) (vvv dt) (vvv 10)))
+        mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv dt) (vvv 5)))
         contacts (-> player :shape (cons level-shapes) shapes-tree shapes-tree-contacts)
-        mov (v+ mov (reduce (sfun (m c) v+ m (-> c :normal (v* (vvv dt)))) contacts :initial-value mov))
+        mov (v+ mov (reduce (sfun (m c) v+ m (v* (-> c :normal) (-> c :dist - vvv))) contacts :initial-value mov))
         player (move-player player mov)
       )
       (with-vals state
