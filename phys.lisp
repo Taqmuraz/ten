@@ -62,6 +62,30 @@
   )
 )
 
+(defun sphere-vs-mesh (sphere mesh)
+  (lets (r nil)
+    (with-maps-keys (((shapes-tree) mesh)
+                     ((shapes tree) shapes-tree)
+                     (((sbounds :bounds)) sphere))
+      (labels (
+          (walk-tree (node)
+            (with-map-keys ((ids :shapes) bounds children) node
+              (when (bounds-intersectp sbounds bounds)
+                (loop for id in ids do
+                  (push-when or (shapes-contact sphere (map-key shapes id)) r)
+                )
+                (mapc #'walk-tree children)
+              )
+            )
+          )
+        )
+        (walk-tree tree)
+      )
+    )
+    r
+  )
+)
+
 (defun cover-with-bounds (bounds p)
   (destructuring-bind (min max) bounds
     (list (vmin min p) (vmax max p))
@@ -98,6 +122,27 @@
   (-> (mapcar #'clamp-with-bounds (ll b) a) bounds-volume zerop not)
 )
 
+(defun sphere-bounds (rad center)
+  (list (v- center (vvv rad)) (v+ center (vvv rad)))
+)
+
+(defun sphere-shape (rad center)
+  (make-assoc
+    :kind :sphere
+    :radius rad
+    :center center
+    :bounds (sphere-bounds rad center)
+  )
+)
+
+(defun triangle-shape (points)
+  (make-assoc
+    :kind :triangle
+    :points points
+    :bounds (apply #'triangle-bounds points)
+  )
+)
+
 (defun mesh-shape (mesh transform)
   (with-map-keys (faces verts) mesh
     (lets (
@@ -110,7 +155,7 @@
       (make-assoc
         :kind :mesh
         :bounds bounds
-        :triangles tris
+        :shapes-tree (shapes-tree (map 'list #'triangle-shape tris))
       )
     )
   )
@@ -152,10 +197,12 @@
           (if (or (>= depth max-depth) (-> shapes length (<= cap)))
             (make-assoc
               :shapes (map-by-key 'list :id shapes)
+              :bounds bounds
               :children nil
             )
             (make-assoc
               :shapes nil
+              :bounds bounds
               :children
               (lets (
                   min (car bounds)
@@ -192,5 +239,58 @@
       :shapes (into-vector shapes)
       :tree (-> shapes give-shapes-id walk-tree)
     )
+  )
+)
+
+(defun shapes-contact (a b)
+  (labels (
+      (svm (a b)
+        (sphere-vs-mesh a b)
+      )
+      (svt (a b)
+        (with-maps-keys (((radius center) a)
+                         ((points) b))
+          (apply #'sphere-vs-triangle radius center points)
+        )
+      )
+      (svs (a b)
+        (with-maps-keys ((((ar :radius) (ac :center)) a)
+                         (((br :radius) (bc :center)) b))
+          (sphere-vs-sphere ar ac br bc)
+        )
+      )
+    )
+    (with-maps-keys ((((akind :kind)) a)
+                     (((bkind :kind)) b))
+      (cases-equal (list akind bkind)
+        '(:sphere :sphere) (svs a b)
+        '(:sphere :triangle) (svt a b)
+        '(:triangle :sphere) (svt b a)
+        '(:sphere :mesh) (svm a b)
+        '(:mesh :sphere) (svm b a)
+      )
+    )
+  )
+)
+
+(defun shapes-tree-contacts (shapes-tree)
+  (lets (r nil)
+    (with-map-keys (shapes tree) shapes-tree
+      (labels (
+          (walk-tree (node)
+            (with-map-keys ((ids :shapes) children) node
+              (loop for (id1 id2) in (all-possible-pairs ids) do
+                (with-map-keys ((s1 id1) (s2 id2)) shapes
+                  (push-when or (shapes-contact s1 s2) r)
+                )
+              )
+              (mapc #'walk-tree children)
+            )
+          )
+        )
+        (walk-tree tree)
+      )
+    )
+    r
   )
 )
