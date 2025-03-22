@@ -78,15 +78,44 @@
   (with-maps-keys (
       (((dt :delta-time)) dev)
       ((campos camrot player) state)
+      ((level-shapes) res)
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
         mov (transform-vector cammat (v* (wasd-xyz) (vvv dt) (vvv 10)))
+        contacts (-> player :shape (cons level-shapes) shapes-tree shapes-tree-contacts)
+        mov (v+ mov (reduce (sfun (m c) v+ m (-> c :normal (v* (vvv dt)))) contacts :initial-value mov))
         player (move-player player mov)
       )
       (with-vals state
         :player player
         :campos (v+ (player-pos player) #(0 2 4))
+      )
+    )
+  )
+)
+
+(defun debug-level-shapes (level-shapes campos camrot proj)
+  (gl:matrix-mode :projection)
+  (gl:load-identity)
+  (-> proj mat-4x4->vec-16 gl:mult-matrix)
+  (gl:matrix-mode :modelview)
+  (gl:load-identity)
+  (gl:with-pushed-matrix
+    (-> (mat-pos-rot-inversed campos camrot) mat-4x4->vec-16 gl:mult-matrix)
+    (gl:with-primitives :lines
+      (gl:color 0 0 1 1)
+      (loop for s in level-shapes do
+        (loop for f across (-> s :triangles) do
+          (with-items (a b c) f
+            (applyv #'gl:vertex a)
+            (applyv #'gl:vertex b)
+            (applyv #'gl:vertex a)
+            (applyv #'gl:vertex c)
+            (applyv #'gl:vertex b)
+            (applyv #'gl:vertex c)
+          )
+        )
       )
     )
   )
@@ -120,6 +149,7 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
+      (debug-level-shapes (-> res :level-shapes) campos camrot proj-mat)
     )
   )
 )
