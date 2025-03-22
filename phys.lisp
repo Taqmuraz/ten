@@ -62,28 +62,8 @@
   )
 )
 
-(defun sphere-vs-mesh (sphere mesh)
-  (lets (r nil)
-    (with-maps-keys (((shapes-tree) mesh)
-                     ((shapes tree) shapes-tree)
-                     (((sbounds :bounds)) sphere))
-      (labels (
-          (walk-tree (node)
-            (with-map-keys ((ids :shapes) bounds children) node
-              (when (bounds-intersectp sbounds bounds)
-                (loop for id in ids do
-                  (push-when or (shapes-contact sphere (map-key shapes id)) r)
-                )
-                (mapc #'walk-tree children)
-              )
-            )
-          )
-        )
-        (walk-tree tree)
-      )
-    )
-    r
-  )
+(defun sphere-vs-mesh (rad center triangles)
+  (some (sfun e apply #'sphere-vs-triangle rad center e) triangles)
 )
 
 (defun cover-with-bounds (bounds p)
@@ -155,7 +135,7 @@
       (make-assoc
         :kind :mesh
         :bounds bounds
-        :shapes-tree (shapes-tree (map 'list #'triangle-shape tris))
+        :triangles triangles
       )
     )
   )
@@ -245,7 +225,10 @@
 (defun shapes-contact (a b)
   (labels (
       (svm (a b)
-        (sphere-vs-mesh a b)
+        (with-maps-keys (((radius center) a)
+                         ((triangles) b))
+          (sphere-vs-mesh radius center triangles)
+        )
       )
       (svt (a b)
         (with-maps-keys (((radius center) a)
