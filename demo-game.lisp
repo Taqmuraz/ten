@@ -12,7 +12,7 @@
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
         )
       )
-      level-data (-> "res/castle/castle_desert.fbx" load-model-data)
+      level-data (-> "res/castle/castle.fbx" load-model-data)
       pose-keys (concatenate 'list
         (list :|entry|)
         (loop for i from 0 to 5 collect (keyword-of "guard_" (into-string i)))
