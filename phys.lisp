@@ -166,7 +166,7 @@
       (give-shapes-id (shapes)
         (mapcar (sfun (s i) with-vals s :id i) shapes (-> shapes length list-range))
       )
-      (walk-tree (shapes &key (bounds nil) (cap 10) (depth 0) (max-depth 5))
+      (walk-tree (shapes &key (bounds nil) (cap 10) (depth 0) (max-depth 2))
         (lets (
             bounds (conds
               bounds bounds
