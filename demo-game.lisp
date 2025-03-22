@@ -27,9 +27,11 @@
       level-model (-> level-data load-model-to-gl load-gl-group)
       player-model (-> "res/chars/archer_anims.fbx" load-model-data load-model-to-gl load-gl-group)
       player-anims (-> player-model :anims vals into-vector)
+      level-shapes (model-mesh-shapes level-data)
     )
     (make-assoc
       :level-model level-model
+      :level-shapes level-shapes
       :player-model player-model
       :player-anims player-anims
       :player-poses player-poses
@@ -40,21 +42,31 @@
 
 (defun demo-game-player (pos)
   (make-assoc
-    :pos pos
+    :shape (sphere-shape 1 (v+ pos #(0 1 0)))
   )
+)
+
+(defun move-player (player mov)
+  (update player (sfun s update s (sfun c v+ c mov) :center) :shape)
+)
+
+(defun player-pos (player)
+  (-> player :shape :center (v- #(0 1/2 0)))
 )
 
 (defun demo-game-setup ()
   (lets (
       res (demo-game-res)
       player-poses (-> res :player-poses)
+      players (mapcar #'demo-game-player player-poses)
     )
     (make-assoc
       :res res
       :state (make-assoc
         :campos (v+ (car player-poses) (vector 1 2 4))
         :camrot (vector 0 pi 0)
-        :players (mapcar #'demo-game-player player-poses)
+        :player (car players)
+        :non-players (cdr players)
       )
       :next 'demo-game-next
       :display 'demo-game-display
@@ -65,26 +77,31 @@
 (defun demo-game-next (dev res state)
   (with-maps-keys (
       (((dt :delta-time)) dev)
-      ((campos camrot) state)
+      ((campos camrot player) state)
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
         mov (transform-vector cammat (v* (wasd-xyz) (vvv dt) (vvv 10)))
+        player (move-player player mov)
       )
-      (update state (mpart v+ mov) :campos)
+      (with-vals state
+        :player player
+        :campos (v+ (player-pos player) #(0 2 4))
+      )
     )
   )
 )
 
 (defun demo-game-display (dev res state)
   (with-maps-keys (((level-model player-model player-anims shaders) res)
-                   ((campos camrot players) state)
+                   ((campos camrot player non-players) state)
                    (((w :width) (h :height) time) dev))
     (lets (
+        players (cons player non-players)
         proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
         mat-stack (list (mat-pos-rot-inversed campos camrot))
         anim (map-key player-anims 0)
-        instances (loop for pos in (map-by-key 'list :pos players) collect
+        instances (loop for pos in (mapcar #'player-pos players) collect
           (with-stack-push mat-stack (applyv 'mat-translation pos)
             (make-assoc
               :root (car mat-stack)
