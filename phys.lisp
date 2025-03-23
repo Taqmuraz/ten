@@ -58,7 +58,10 @@
 )
 
 (defun sphere-vs-mesh (rad center triangles)
-  (some (sfun e apply #'sphere-vs-triangle rad center e) triangles)
+  (last-> triangles
+    (map 'list (sfun e apply #'sphere-vs-triangle rad center e))
+    (remove-if #'null)
+  )
 )
 
 (defun cover-with-bounds (bounds p)
@@ -214,17 +217,17 @@
   )
 )
 
-(defun shapes-contact (a b)
+(defun shapes-contacts (a b)
   (labels (
       (svm (a b &optional reverse)
         (with-maps-keys (((radius center (abounds :bounds)) a)
                          ((triangles (bbounds :bounds)) b))
           (lets (
-              contact (when (bounds-intersectp abounds bbounds)
+              contacts (when (bounds-intersectp abounds bbounds)
                 (sphere-vs-mesh radius center triangles)
               )
             )
-            (when contact
+            (loop for contact in contacts collect
               (with-map-keys (normal point dist) contact
                 (if reverse
                   (make-assoc
@@ -250,7 +253,9 @@
       (svs (a b &optional reverse)
         (with-maps-keys ((((ar :radius) (ac :center)) a)
                          (((br :radius) (bc :center)) b))
-          (sphere-vs-sphere ar ac br bc)
+          (lets (c (sphere-vs-sphere ar ac br bc))
+            (when c (list c))
+          )
         )
       )
     )
@@ -275,8 +280,13 @@
                 for p = (list id1 id2)
                 do (hash-once p c
                   (with-map-keys ((s1 id1) (s2 id2)) shapes
-                    (push-when (sfun c when c (with-vals c :id-a id1 :id-b id2))
-                      (shapes-contact s1 s2) r)
+                    (lets (
+                        cs (shapes-contacts s1 s2)
+                      )
+                      (when cs (setf r
+                        (append r (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)))
+                      )
+                    )
                   )
                 )
               )
