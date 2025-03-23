@@ -38,9 +38,11 @@
     (with-items (a b c) points
       (lets (
           rel (v- center b)
-          dst (-> rel (dot normal) abs (- rad))
+          rd (dot normal rel)
+          dst (- (abs rd) rad)
         )
         (when (and
+            (<= 0 rd)
             (<= dst 0)
             (<= 0 (dot (turn normal a b) (v- center b)))
             (<= 0 (dot (turn normal b c) (v- center c)))

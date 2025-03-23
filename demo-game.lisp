@@ -42,7 +42,7 @@
 
 (defun demo-game-player (pos)
   (make-assoc
-    :shape (sphere-shape 1 (v+ pos #(0 1 0)))
+    :shape (sphere-shape 1/2 (v+ pos #(0 1/2 0)))
   )
 )
 
