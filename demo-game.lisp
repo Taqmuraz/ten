@@ -90,18 +90,23 @@
 (defun demo-game-next (dev res state)
   (with-maps-keys (
       (((dt :delta-time)) dev)
-      ((campos camrot player) state)
+      ((campos camrot player non-players) state)
       ((level-shapes) res)
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
-        mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv dt) (vvv 5)))
-        contacts (-> player :shape (cons level-shapes) shapes-tree shapes-tree-contacts)
-        mov (v+ mov (reduce (sfun (m c) v+ m (v* (-> c :normal) (-> c :dist - vvv))) contacts :initial-value mov))
+        mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv* dt 10)))
         player (move-player player mov)
+        players (cons player non-players)
+        shapes (append (map-by-key 'list :shape players) level-shapes)
+        shapes (-> shapes shapes-tree (shapes-tree-sim dt))
+        players (mapcar (sfun (p s) with-vals p :shape s) players shapes)
+        player (car players)
+        non-players (cdr players)
       )
       (with-vals state
         :player player
+        :non-players non-players
         :campos (v+ (player-pos player) #(0 2 4))
       )
     )
@@ -116,6 +121,12 @@
   (gl:load-identity)
   (gl:with-pushed-matrix
     (-> (mat-pos-rot-inversed campos camrot) mat-4x4->vec-16 gl:mult-matrix)
+    (gl:with-pushed-matrix
+      (applyv #'gl:translate (-> player :shape :center))
+      (gl:rotate 90 1 0 0)
+      (gl:color 1 0 0 1)
+      (glut:wire-sphere (-> player :shape :radius) 16 16)
+    )
     (gl:with-primitives :lines
       (gl:color 0 0 1 1)
       (with-maps-keys (((shape) player)

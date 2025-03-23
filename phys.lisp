@@ -216,13 +216,38 @@
 
 (defun shapes-contact (a b)
   (labels (
-      (svm (a b)
+      (svm (a b &optional reverse)
         (with-maps-keys (((radius center (abounds :bounds)) a)
                          ((triangles (bbounds :bounds)) b))
-          (when (bounds-intersectp abounds bbounds) (sphere-vs-mesh radius center triangles))
+          (lets (
+              contact (when (bounds-intersectp abounds bbounds)
+                (sphere-vs-mesh radius center triangles)
+              )
+            )
+            (when contact
+              (with-map-keys (normal point dist) contact
+                (if reverse
+                  (make-assoc
+                    :point-a point
+                    :point-b point
+                    :normal-a (v- normal)
+                    :normal-b normal
+                    :dist dist
+                  )
+                  (make-assoc
+                    :point-a point
+                    :point-b point
+                    :normal-a normal
+                    :normal-b (v- normal)
+                    :dist dist
+                  )
+                )
+              )
+            )
+          )
         )
       )
-      (svs (a b)
+      (svs (a b &optional reverse)
         (with-maps-keys ((((ar :radius) (ac :center)) a)
                          (((br :radius) (bc :center)) b))
           (sphere-vs-sphere ar ac br bc)
@@ -234,7 +259,7 @@
       (cases-equal (list akind bkind)
         '(:sphere :sphere) (svs a b)
         '(:sphere :mesh) (svm a b)
-        '(:mesh :sphere) (svm b a)
+        '(:mesh :sphere) (svm b a t)
       )
     )
   )
@@ -250,7 +275,8 @@
                 for p = (list id1 id2)
                 do (hash-once p c
                   (with-map-keys ((s1 id1) (s2 id2)) shapes
-                    (push-when or (shapes-contact s1 s2) r)
+                    (push-when (sfun c when c (with-vals c :id-a id1 :id-b id2))
+                      (shapes-contact s1 s2) r)
                   )
                 )
               )
@@ -262,5 +288,46 @@
       )
     )
     r
+  )
+)
+
+(defun shapes-tree-sim (shapes-tree delta-time)
+  (with-map-keys (shapes tree) shapes-tree
+    (labels (
+        (process-sphere-contact (shape point normal dist)
+          (lets (
+              n (v* normal (vvv* -1 dist))
+              center (-> shape :center (v+ n))
+              bounds (sphere-bounds (-> shape :radius) center)
+            )
+            (with-vals shape
+              :center center
+              :bounds bounds
+            )
+          )
+        )
+        (process-contact (contact)
+          (with-maps-keys (
+              ((id-a id-b point-a point-b normal-a normal-b dist) contact)
+              (((a id-a) (b id-b)) shapes)
+              (((kind-a :kind)) a)
+              (((kind-b :kind)) b)
+            )
+            (cases kind-a :sphere
+              (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a dist))
+            )
+            (cases kind-b :sphere
+              (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b dist))
+            )
+          )
+        )
+      )
+      (lets (
+          contacts (shapes-tree-contacts shapes-tree)
+        )
+        (mapc #'process-contact contacts)
+        (coerce shapes 'list)
+      )
+    )
   )
 )
