@@ -33,6 +33,7 @@
         :initial-contents (loop for e across v collect (coerce e 'single-float))
       ))
       (vcol (v) (col (concatenate 'vector v '(0))))
+      (turn (n a b) (cross n (v- a b)))
     )
     (with-items (a b c) points
       (lets (
@@ -41,14 +42,11 @@
         )
         (when (<= dst 0)
           (lets (
-              x-axis (v- a b)
-              y-axis (v- c b)
-              a (len x-axis)
-              b (len y-axis)
-              x (dot rel (norm x-axis))
-              y (dot rel (norm y-axis))
+              ad (dot (turn normal a b) (v- center b))
+              bd (dot (turn normal b c) (v- center c))
+              cd (dot (turn normal c a) (v- center a))
             )
-            (when (and (<= 0 x) (<= 0 y) (<= y (- b (* (/ b a) x))))
+            (when (and (<= 0 ad) (<= 0 bd) (<= 0 cd))
               (make-assoc
                 :dist dst
                 :point (v+ center (v* normal (vvv (- 0 dst rad))))
