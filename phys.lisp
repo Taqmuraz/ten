@@ -26,7 +26,7 @@
   )
 )
 
-(defun sphere-vs-triangle (rad center a b c)
+(defun sphere-vs-triangle (rad center points normal)
   (labels (
       (col (v) (make-array (length v)
         :element-type 'single-float
@@ -34,26 +34,27 @@
       ))
       (vcol (v) (col (concatenate 'vector v '(0))))
     )
-    (lets (
-        tnorm (norm (cross (v- a b) (v- c b)))
-        dst (-> center (v- a) (dot tnorm) abs (- rad))
-      )
-      (when (<= dst 0)
-        (lets (
-            tmat (rtg-math.matrix4:from-columns
-              (vcol (v- a center))
-              (vcol (v- b center))
-              (vcol (v- c center))
-              (col #(0 0 0 1))
+    (with-items (a b c) points
+      (lets (
+          dst (-> center (v- a) (dot normal) abs (- rad))
+        )
+        (when (<= dst 0)
+          (lets (
+              tmat (rtg-math.matrix4:from-columns
+                (vcol (v- a center))
+                (vcol (v- b center))
+                (vcol (v- c center))
+                (col #(0 0 0 1))
+              )
+              inv (-> tmat rtg-math.matrix4:inverse vec-16->mat-4x4)
+              p (transform-vector inv (v- normal))
             )
-            inv (-> tmat rtg-math.matrix4:inverse vec-16->mat-4x4)
-            p (transform-vector inv (v- tnorm))
-          )
-          (when (not (at-least-one p (sfun e < e 0)))
-            (make-assoc
-              :dist dst
-              :point (v+ center (v* tnorm (vvv (- 0 dst rad))))
-              :normal tnorm
+            (when (not (at-least-one p (sfun e < e 0)))
+              (make-assoc
+                :dist dst
+                :point (v+ center (v* normal (vvv (- 0 dst rad))))
+                :normal normal
+              )
             )
           )
         )
@@ -127,7 +128,12 @@
       (make-assoc
         :kind :mesh
         :bounds bounds
-        :triangles tris
+        :triangles (map 'vector
+          (sfun e with-items (a b c) e
+            (list e (norm (cross (v- a b) (v- c b))))
+          )
+          tris
+        )
       )
     )
   )
