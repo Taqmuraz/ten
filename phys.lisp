@@ -36,20 +36,19 @@
     )
     (with-items (a b c) points
       (lets (
-          dst (-> center (v- a) (dot normal) abs (- rad))
+          rel (v- center b)
+          dst (-> rel (dot normal) abs (- rad))
         )
         (when (<= dst 0)
           (lets (
-              tmat (rtg-math.matrix4:from-columns
-                (vcol (v- a center))
-                (vcol (v- b center))
-                (vcol (v- c center))
-                (col #(0 0 0 1))
-              )
-              inv (-> tmat rtg-math.matrix4:inverse vec-16->mat-4x4)
-              p (transform-vector inv (v- normal))
+              x-axis (v- a b)
+              y-axis (v- c b)
+              a (len x-axis)
+              b (len y-axis)
+              x (dot rel (norm x-axis))
+              y (dot rel (norm y-axis))
             )
-            (when (not (at-least-one p (sfun e < e 0)))
+            (when (and (<= 0 x) (<= 0 y) (<= y (- b (* (/ b a) x))))
               (make-assoc
                 :dist dst
                 :point (v+ center (v* normal (vvv (- 0 dst rad))))
