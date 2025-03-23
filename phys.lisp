@@ -40,19 +40,16 @@
           rel (v- center b)
           dst (-> rel (dot normal) abs (- rad))
         )
-        (when (<= dst 0)
-          (lets (
-              ad (dot (turn normal a b) (v- center b))
-              bd (dot (turn normal b c) (v- center c))
-              cd (dot (turn normal c a) (v- center a))
-            )
-            (when (and (<= 0 ad) (<= 0 bd) (<= 0 cd))
-              (make-assoc
-                :dist dst
-                :point (v+ center (v* normal (vvv (- 0 dst rad))))
-                :normal normal
-              )
-            )
+        (when (and
+            (<= dst 0)
+            (<= 0 (dot (turn normal a b) (v- center b)))
+            (<= 0 (dot (turn normal b c) (v- center c)))
+            (<= 0 (dot (turn normal c a) (v- center a)))
+          )
+          (make-assoc
+            :dist dst
+            :point (v+ center (v* normal (vvv (- 0 dst rad))))
+            :normal normal
           )
         )
       )
