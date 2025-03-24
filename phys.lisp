@@ -27,13 +27,11 @@
 )
 
 (defun sphere-vs-triangle (rad center points normal)
-  (labels (
-      (col (v) (make-array (length v)
-        :element-type 'single-float
-        :initial-contents (loop for e across v collect (coerce e 'single-float))
-      ))
-      (vcol (v) (col (concatenate 'vector v '(0))))
-      (turn (n a b) (cross n (v- a b)))
+  (macrolet (
+      (turn (n a b) `(cross ,n (bvec vector - ,a ,b)))
+      (v- (a b) `(bvec vector - ,a ,b))
+      (v* (a b) `(bvec vector * ,a ,b))
+      (v+ (a b) `(bvec vector + ,a ,b))
     )
     (with-items (a b c) points
       (lets (

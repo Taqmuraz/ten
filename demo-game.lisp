@@ -99,7 +99,7 @@
         player (move-player player mov)
         players (cons player non-players)
         shapes (append (map-by-key 'list :shape players) level-shapes)
-        shapes (-> shapes shapes-tree (shapes-tree-sim dt))
+        shapes (shapes-sim-cycle shapes dt 1)
         players (mapcar (sfun (p s) with-vals p :shape s) players shapes)
         player (car players)
         non-players (cdr players)
