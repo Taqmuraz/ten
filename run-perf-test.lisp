@@ -5,8 +5,8 @@
     dt 1/50
     cycles 100
   )
-  (format t "Testing with process-forces :~%")
+  (format t "Testing ~A cycles with process-forces :~%" cycles)
   (time (loop repeat cycles do (-> as (process-forces dt) shapes-tree (shapes-tree-sim dt))))
-  (format t "Testing without process-forces :~%")
+  (format t "Testing ~A cycles without process-forces :~%" cycles)
   (time (loop repeat cycles do (-> as shapes-tree (shapes-tree-sim dt))))
 )
