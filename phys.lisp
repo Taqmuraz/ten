@@ -356,9 +356,20 @@
   )
 )
 
-(defun shapes-sim-cycle (shapes delta-time cycles)
-  (loop with s = shapes repeat cycles do
-    (setf s (-> shapes shapes-tree (shapes-tree-sim (/ delta-time cycles))))
-    finally (return s)
+(lets (
+    fixed-time 0
+  )
+  (defun shapes-fixed-cycle (shapes delta-time &key (fixed-delta-time 1/50) (max-cycles 1))
+    (incf fixed-time delta-time)
+    (if (< fixed-delta-time fixed-time)
+      (multiple-value-bind (n l) (floor fixed-time fixed-delta-time)
+        (setf fixed-time l)
+        (loop with s = shapes repeat n do
+          (setf s (-> shapes shapes-tree (shapes-tree-sim fixed-delta-time)))
+          finally (return s)
+        )
+      )
+      shapes
+    )
   )
 )
