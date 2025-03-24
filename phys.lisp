@@ -124,6 +124,33 @@
     :radius rad
     :center center
     :bounds (sphere-bounds rad center)
+    :velocity (vvv 0)
+  )
+)
+
+(defun update-sphere-center (sphere func)
+  (with-map-keys (radius center) shape
+    (lets (
+        center (funcall func center)
+      )
+      (with-vals shape
+        :center center
+        :bounds (sphere-bounds radius center)
+      )
+    )
+  )
+)
+
+(defun recalc-sphere-bounds (sphere)
+  (with-map-keys (radius center) sphere
+    (with-vals sphere :bounds (sphere-bounds radius center))
+  )
+)
+
+(defun recalc-shape-bounds (shape)
+  (cases (-> shape :kind)
+    :sphere (recalc-sphere-bounds shape)
+    t shape
   )
 )
 
@@ -315,42 +342,61 @@
   )
 )
 
-(defun shapes-tree-sim (shapes-tree delta-time)
-  (with-map-keys (shapes tree) shapes-tree
-    (labels (
-        (process-sphere-contact (shape point normal dist)
-          (lets (
-              n (v* normal (vvv* -1 dist))
-              center (-> shape :center (v+ n))
-              bounds (sphere-bounds (-> shape :radius) center)
+(defun shapes-tree-sim (shapes-tree delta-time &key (gravity #(0 -9.8 0)))
+  (lets (
+      dg (v* gravity (vvv delta-time))
+    )
+    (with-map-keys (shapes tree) shapes-tree
+      (labels (
+          (process-sphere-contact (shape point normal dist)
+            (lets (
+                n (v* normal (vvv* -1 dist))
+                center (-> shape :center (v+ n))
+                vel (-> shape :velocity)
+                vd (dot vel normal)
+                vel (if (< vd 0) (v- vel (v* normal (vvv vd))) vel)
+                bounds (sphere-bounds (-> shape :radius) center)
+              )
+              (with-vals shape
+                :center center
+                :bounds bounds
+                :velocity vel
+              )
             )
-            (with-vals shape
-              :center center
-              :bounds bounds
+          )
+          (process-contact (contact)
+            (with-maps-keys (
+                ((id-a id-b point-a point-b normal-a normal-b dist) contact)
+                (((a id-a) (b id-b)) shapes)
+                (((kind-a :kind)) a)
+                (((kind-b :kind)) b)
+              )
+              (cases kind-a :sphere
+                (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a dist))
+              )
+              (cases kind-b :sphere
+                (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b dist))
+              )
+            )
+          )
+          (process-forces (shape)
+            (cases (-> shape :kind)
+              :sphere (with-map-keys (velocity center) shape
+                (recalc-shape-bounds (with-vals shape
+                  :velocity (v+ velocity dg)
+                  :center (v+ center (v* velocity (vvv delta-time)))
+                ))
+              )
+              t shape
             )
           )
         )
-        (process-contact (contact)
-          (with-maps-keys (
-              ((id-a id-b point-a point-b normal-a normal-b dist) contact)
-              (((a id-a) (b id-b)) shapes)
-              (((kind-a :kind)) a)
-              (((kind-b :kind)) b)
-            )
-            (cases kind-a :sphere
-              (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a dist))
-            )
-            (cases kind-b :sphere
-              (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b dist))
-            )
+        (lets (
+            contacts (shapes-tree-contacts shapes-tree)
           )
+          (mapc #'process-contact contacts)
+          (map 'list #'process-forces shapes)
         )
-      )
-      (lets (
-          contacts (shapes-tree-contacts shapes-tree)
-        )
-        (mapc #'process-contact contacts)
-        (coerce shapes 'list)
       )
     )
   )
@@ -364,7 +410,7 @@
     (if (< fixed-delta-time fixed-time)
       (multiple-value-bind (n l) (floor fixed-time fixed-delta-time)
         (setf fixed-time l)
-        (loop with s = shapes repeat n do
+        (loop with s = shapes repeat (min n max-cycles) do
           (setf s (-> shapes shapes-tree (shapes-tree-sim fixed-delta-time)))
           finally (return s)
         )

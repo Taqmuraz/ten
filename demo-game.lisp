@@ -48,17 +48,7 @@
 
 (defun move-player (player mov)
   (update player
-    (sfun s with-map-keys (radius center bounds) s
-      (lets (
-          center (v+ center mov)
-          bounds (sphere-bounds radius center)
-        )
-        (with-vals s
-          :center center
-          :bounds bounds
-        )
-      )
-    )
+    (sfun s update s (sfun v progn mov) :velocity)
     :shape
   )
 )
@@ -95,7 +85,7 @@
     )
     (lets (
         cammat (applyv 'mat-rotation camrot)
-        mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv* dt 10)))
+        mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv 10)))
         player (move-player player mov)
         players (cons player non-players)
         shapes (append (map-by-key 'list :shape players) level-shapes)
