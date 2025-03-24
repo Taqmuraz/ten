@@ -351,7 +351,7 @@
               center (-> shape :center (v+ n))
               vel (-> shape :velocity)
               vd (dot vel normal)
-              vel (if (< vd 0) (v- vel (v* normal (vvv* 1.5 vd))) vel)
+              vel (if (< vd 0) (v- vel (v* normal (vvv vd))) vel)
               bounds (sphere-bounds (-> shape :radius) center)
             )
             (with-vals shape
