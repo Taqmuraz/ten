@@ -99,7 +99,21 @@
 )
 
 (defun bounds-intersectp (a b)
-  (-> (mapcar #'clamp-with-bounds (ll b) a) bounds-volume zerop not)
+  (macrolet (
+      (bv (op x y) `(bvec vector ,op ,x ,y))
+      (iv (op v) `(invec vector ,op ,v))
+    )
+    (with-items (amin amax) a
+      (with-items (bmin bmax) b
+        (lets (
+            min (bv max bmin (bv min amin bmax))
+            max (bv max bmin (bv min amax bmax))
+          )
+          (-> (iv * (bv - max min)) zerop not)
+        )
+      )
+    )
+  )
 )
 
 (defun sphere-bounds (rad center)
@@ -203,7 +217,7 @@
                   )
                 )
                 (loop for cut in cuts
-                  for ss = (remove-if-not (sfun s -> s :bounds (bounds-intersectp cut)) shapes)
+                  for ss = (remove-if-not (sfun s bounds-intersectp (-> s :bounds) cut) shapes)
                   collect (walk-tree ss :bounds cut :cap cap :depth (+ 1 depth))
                 )
               )
@@ -341,5 +355,12 @@
         (coerce shapes 'list)
       )
     )
+  )
+)
+
+(defun shapes-sim-cycle (shapes delta-time cycles)
+  (loop with s = shapes repeat cycles do
+    (setf s (-> shapes shapes-tree (shapes-tree-sim (/ delta-time cycles))))
+    finally (return s)
   )
 )
