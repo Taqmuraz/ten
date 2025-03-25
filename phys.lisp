@@ -95,7 +95,10 @@
 )
 
 (defun triangle-bounds (a b c)
-  (list (vmin a b c) (vmax a b c))
+  (list
+    (v+ (vvv -1/100) (vmin a b c))
+    (v+ (vvv 1/100) (vmax a b c))
+  )
 )
 
 (defun combine-bounds (a b &rest others)
@@ -219,12 +222,12 @@
   )
 )
 
-(defun generic-tree (items &key items-key item-bounds item-with-id item-id)
+(defun generic-tree (items &key items-key item-bounds item-with-id item-id (cap 10) (max-depth 2))
   (labels (
       (give-items-id (items)
         (mapcar item-with-id items (-> items length list-range))
       )
-      (walk-tree (items &key (bounds nil) (cap 10) (depth 0) (max-depth 2))
+      (walk-tree (items &key (bounds nil) (depth 0))
         (lets (
             bounds (conds
               bounds bounds
@@ -265,7 +268,7 @@
                 )
                 (loop for cut in cuts
                   for ss = (remove-if-not (sfun s bounds-intersectp (funcall item-bounds s) cut) items)
-                  collect (walk-tree ss :bounds cut :cap cap :depth (+ 1 depth))
+                  collect (walk-tree ss :bounds cut :depth (+ 1 depth))
                 )
               )
             )
@@ -295,6 +298,8 @@
     :item-id #'caddr
     :item-bounds (sfun item with-items (a b c) (car item) (triangle-bounds a b c))
     :item-with-id (sfun (item id) append item (list id))
+    :cap 20
+    :max-depth 5
   )
 )
 
