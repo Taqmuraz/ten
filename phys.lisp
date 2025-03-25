@@ -1,5 +1,8 @@
 (in-package #:ten)
 
+(defparameter *eps* 1/1000)
+(defparameter *-eps* (- *eps*))
+
 (defun sphere-vs-sphere (a-rad a-center b-rad b-center)
   (lets (
       d (v- a-center b-center)
@@ -42,9 +45,9 @@
         (when (and
             (<= 0 rd)
             (<= dst 0)
-            (<= 0 (dot (turn normal a b) (v- center b)))
-            (<= 0 (dot (turn normal b c) (v- center c)))
-            (<= 0 (dot (turn normal c a) (v- center a)))
+            (<= *-eps* (dot (turn normal a b) (v- center b)))
+            (<= *-eps* (dot (turn normal b c) (v- center c)))
+            (<= *-eps* (dot (turn normal c a) (v- center a)))
           )
           (make-assoc
             :dist dst
@@ -96,8 +99,8 @@
 
 (defun triangle-bounds (a b c)
   (list
-    (v+ (vvv -1/100) (vmin a b c))
-    (v+ (vvv 1/100) (vmax a b c))
+    (v+ (vvv (- *eps*)) (vmin a b c))
+    (v+ (vvv *eps*) (vmax a b c))
   )
 )
 
