@@ -1,6 +1,6 @@
 (in-package #:ten)
 
-(defparameter *eps* 1/1000)
+(defparameter *eps* 1/100000)
 (defparameter *-eps* (- *eps*))
 
 (defun sphere-vs-sphere (a-rad a-center b-rad b-center)
@@ -99,8 +99,8 @@
 
 (defun triangle-bounds (a b c)
   (list
-    (v+ (vvv (- *eps*)) (vmin a b c))
-    (v+ (vvv *eps*) (vmax a b c))
+    (bvec vector + (vvv *-eps*) (bvec vector min (bvec vector min a b) c))
+    (bvec vector + (vvv *eps*)  (bvec vector max (bvec vector max a b) c))
   )
 )
 
@@ -185,21 +185,21 @@
     (lets (
         tris (map 'list (sfun f map 'list (sfun e transform-point transform (aref verts e)) f) faces)
         bounds (if tris (applyv #'triangle-bounds (car tris)) (-> 0 vvv vvv))
-        tris-with-normal (mapcar
+        tris (mapcar
           (sfun e with-items (a b c) e
-            (list e (norm (cross (v- a b) (v- c b))))
+            (list e (norm (cross (v- a b) (v- c b))) (triangle-bounds a b c))
           )
           tris
         )
       )
-      (loop for (a b c) in tris do
-        (setf bounds (combine-bounds bounds (triangle-bounds a b c)))
+      (loop for (p n b) in tris do
+        (setf bounds (combine-bounds bounds b))
       )
       (make-assoc
         :kind :mesh
         :bounds bounds
-        :triangles tris-with-normal
-        :triangles-tree (triangles-tree tris-with-normal)
+        :triangles tris
+        :triangles-tree (triangles-tree tris)
       )
     )
   )
@@ -298,11 +298,11 @@
 (defun triangles-tree (triangles)
   (generic-tree triangles
     :items-key :triangles
-    :item-id #'caddr
-    :item-bounds (sfun item with-items (a b c) (car item) (triangle-bounds a b c))
+    :item-id #'cadddr
+    :item-bounds #'caddr
     :item-with-id (sfun (item id) append item (list id))
     :cap 20
-    :max-depth 5
+    :max-depth 2
   )
 )
 
