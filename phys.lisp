@@ -29,49 +29,52 @@
   )
 )
 
-(defun sphere-vs-triangle (rad center points normal)
-  (macrolet (
-      (turn (n a b) `(cross ,n (bvec vector - ,a ,b)))
-      (v- (a b) `(bvec vector - ,a ,b))
-      (v* (a b) `(bvec vector * ,a ,b))
-      (v+ (a b) `(bvec vector + ,a ,b))
-      (db (&body body) `(pipe ,body print))
-    )
-    (labels (
-        (cut (p a b)
-          (lets (
-              n (turn normal a b)
-              d (dot n (v- center b))
-            )
-            (if (<= 0 d)
-              p
-              (v+ p (v* n (vvv* -1 d)))
-            )
+(defun triangle-closest-point (p a b c)
+  (labels (
+      (clamp (x min max) (min max (max min x)))
+      (cut (p a b c)
+        (lets (
+            d (v- p b)
+            xd (v- a b)
+            yd (v- c b)
+            x-axis (norm xd)
+            y-axis (norm yd)
+            x (dot d x-axis)
+            y (dot d y-axis)
+            ;x (clamp x 0 (len xd))
+            ;y (clamp y 0 (len yd))
+          )
+          (format t "a ~A~%b ~A~%c ~A~%d ~A~%xd ~A~%yd ~A~%x-axis ~A~%y-axis ~A~%x ~A~%y ~A~%"
+            a b c d xd yd x-axis y-axis x y
+          )
+          (v+
+            (v* x-axis (vvv x))
+            (v* y-axis (vvv y))
+            b
           )
         )
       )
-      (with-items (a b c) points
+    )
+    (-> p (cut a b c) (cut b c a))
+  )
+)
+
+(defun sphere-vs-triangle (rad center points normal)
+  (with-items (a b c) points
+    (lets (
+        rel (v- center b)
+        rd (dot normal rel)
+      )
+      (when (<= 0 rd)
         (lets (
-            rel (v- center b)
-            rd (dot normal rel)
+            p (triangle-closest-point center a b c)
+            dst (- (len (v- center p)) rad)
           )
-          (when (<= 0 rd)
-            (lets (
-                onp (v- center (v* normal (vvv rd)))
-                p (-> onp
-                  (cut a b)
-                  (cut b c)
-                  (cut c a)
-                )
-                dst (- (len (v- center p)) rad)
-              )
-              (when (<= dst 0)
-                (make-assoc
-                  :dist dst
-                  :point p
-                  :normal normal
-                )
-              )
+          (when (<= dst 0)
+            (make-assoc
+              :dist dst
+              :point p
+              :normal normal
             )
           )
         )
