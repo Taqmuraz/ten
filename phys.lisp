@@ -57,10 +57,25 @@
   )
 )
 
-(defun sphere-vs-mesh (rad center triangles)
-  (last-> triangles
-    (map 'list (sfun e apply #'sphere-vs-triangle rad center e))
-    (remove-if #'null)
+(defun sphere-vs-mesh (rad center bounds triangles-tree)
+  (lets (r nil)
+    (labels (
+        (walk-tree (triangles node)
+          (with-map-keys ((ids :triangles) (tbounds :bounds) children) node
+            (when (bounds-intersectp bounds tbounds)
+              (loop for id in ids
+                for pn = (aref triangles id)
+                for c = (sphere-vs-triangle rad center (car pn) (cadr pn))
+                do (when c (push c r))
+              )
+              (loop for c in children do (walk-tree triangles c))
+            )
+          )
+        )
+      )
+      (with-map-keys (triangles tree) triangles-tree (walk-tree triangles tree))
+      r
+    )
   )
 )
 
@@ -157,21 +172,23 @@
 (defun mesh-shape (mesh transform)
   (with-map-keys (faces verts) mesh
     (lets (
-        tris (map 'vector (sfun f map 'list (sfun e transform-point transform (aref verts e)) f) faces)
-        bounds (applyv #'triangle-bounds (map-key tris 0 (-> 0 vvv vvv)))
-      )
-      (loop for (a b c) across tris do
-        (setf bounds (combine-bounds bounds (triangle-bounds a b c)))
-      )
-      (make-assoc
-        :kind :mesh
-        :bounds bounds
-        :triangles (map 'vector
+        tris (map 'list (sfun f map 'list (sfun e transform-point transform (aref verts e)) f) faces)
+        bounds (if tris (applyv #'triangle-bounds (car tris)) (-> 0 vvv vvv))
+        tris-with-normal (mapcar
           (sfun e with-items (a b c) e
             (list e (norm (cross (v- a b) (v- c b))))
           )
           tris
         )
+      )
+      (loop for (a b c) in tris do
+        (setf bounds (combine-bounds bounds (triangle-bounds a b c)))
+      )
+      (make-assoc
+        :kind :mesh
+        :bounds bounds
+        :triangles tris-with-normal
+        :triangles-tree (triangles-tree tris-with-normal)
       )
     )
   )
@@ -267,14 +284,23 @@
   )
 )
 
+(defun triangles-tree (triangles)
+  (generic-tree triangles
+    :items-key :triangles
+    :item-id #'caddr
+    :item-bounds (sfun item with-items (a b c) (car item) (triangle-bounds a b c))
+    :item-with-id (sfun (item id) append item (list id))
+  )
+)
+
 (defun shapes-contacts (a b)
   (labels (
       (svm (a b &optional reverse)
         (with-maps-keys (((radius center (abounds :bounds)) a)
-                         ((triangles (bbounds :bounds)) b))
+                         ((triangles-tree (bbounds :bounds)) b))
           (lets (
               contacts (when (bounds-intersectp abounds bbounds)
-                (sphere-vs-mesh radius center triangles)
+                (sphere-vs-mesh radius center abounds triangles-tree)
               )
             )
             (loop for contact in contacts collect
