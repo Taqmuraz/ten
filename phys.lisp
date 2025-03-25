@@ -35,24 +35,44 @@
       (v- (a b) `(bvec vector - ,a ,b))
       (v* (a b) `(bvec vector * ,a ,b))
       (v+ (a b) `(bvec vector + ,a ,b))
+      (db (&body body) `(pipe ,body print))
     )
-    (with-items (a b c) points
-      (lets (
-          rel (v- center b)
-          rd (dot normal rel)
-          dst (- (abs rd) rad)
-        )
-        (when (and
-            (<= 0 rd)
-            (<= dst 0)
-            (<= *-eps* (dot (turn normal a b) (v- center b)))
-            (<= *-eps* (dot (turn normal b c) (v- center c)))
-            (<= *-eps* (dot (turn normal c a) (v- center a)))
+    (labels (
+        (cut (p a b)
+          (lets (
+              n (turn normal a b)
+              d (dot n (v- center b))
+            )
+            (if (<= 0 d)
+              p
+              (v+ p (v* n (vvv* -1 d)))
+            )
           )
-          (make-assoc
-            :dist dst
-            :point (v+ center (v* normal (vvv (- 0 dst rad))))
-            :normal normal
+        )
+      )
+      (with-items (a b c) points
+        (lets (
+            rel (v- center b)
+            rd (dot normal rel)
+          )
+          (when (<= 0 rd)
+            (lets (
+                onp (v- center (v* normal (vvv rd)))
+                p (-> onp
+                  (cut a b)
+                  (cut b c)
+                  (cut c a)
+                )
+                dst (- (len (v- center p)) rad)
+              )
+              (when (<= dst 0)
+                (make-assoc
+                  :dist dst
+                  :point p
+                  :normal normal
+                )
+              )
+            )
           )
         )
       )
