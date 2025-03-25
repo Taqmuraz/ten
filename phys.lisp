@@ -97,13 +97,14 @@
       (when (<= 0 rd)
         (lets (
             p (triangle-closest-point center a b c normal)
-            dst (- (len (v- center p)) rad)
+            n (v- center p)
+            dst (- (len n) rad)
           )
           (when (<= dst 0)
             (make-assoc
               :dist dst
               :point p
-              :normal normal
+              :normal (norm n)
             )
           )
         )
