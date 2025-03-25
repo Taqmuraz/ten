@@ -124,7 +124,7 @@
         (loop for s in level-shapes do
           (when (bounds-intersectp (-> s :bounds) bounds)
             (gl:color 0 1 0 1)
-            (loop for f across (-> s :triangles) do
+            (loop for f in (-> s :triangles) do
               (with-items (a b c) (car f)
                 (applyv #'gl:vertex a)
                 (applyv #'gl:vertex b)

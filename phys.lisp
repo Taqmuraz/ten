@@ -58,15 +58,20 @@
 )
 
 (defun sphere-vs-mesh (rad center bounds triangles-tree)
-  (lets (r nil)
+  (lets (r nil h (hash))
     (labels (
         (walk-tree (triangles node)
           (with-map-keys ((ids :triangles) (tbounds :bounds) children) node
             (when (bounds-intersectp bounds tbounds)
-              (loop for id in ids
-                for pn = (aref triangles id)
-                for c = (sphere-vs-triangle rad center (car pn) (cadr pn))
-                do (when c (push c r))
+              (loop for id in ids do
+                (hash-once id h
+                  (lets (
+                      pn (aref triangles id)
+                      c (sphere-vs-triangle rad center (car pn) (cadr pn))
+                    )
+                    (when c (push c r))
+                  )
+                )
               )
               (loop for c in children do (walk-tree triangles c))
             )
