@@ -197,27 +197,27 @@
   )
 )
 
-(defun shapes-tree (shapes)
+(defun generic-tree (items &key items-key item-bounds item-with-id item-id)
   (labels (
-      (give-shapes-id (shapes)
-        (mapcar (sfun (s i) with-vals s :id i) shapes (-> shapes length list-range))
+      (give-items-id (items)
+        (mapcar item-with-id items (-> items length list-range))
       )
-      (walk-tree (shapes &key (bounds nil) (cap 10) (depth 0) (max-depth 2))
+      (walk-tree (items &key (bounds nil) (cap 10) (depth 0) (max-depth 2))
         (lets (
             bounds (conds
               bounds bounds
-              (cdr shapes) (apply #'combine-bounds (map-by-key 'list :bounds shapes))
+              (cdr items) (apply #'combine-bounds (mapcar item-bounds items))
               t `((0 0 0)(0 0 0))
             )
           )
-          (if (or (>= depth max-depth) (-> shapes length (<= cap)))
+          (if (or (>= depth max-depth) (-> items length (<= cap)))
             (make-assoc
-              :shapes (map-by-key 'list :id shapes)
+              items-key (mapcar item-id items)
               :bounds bounds
               :children nil
             )
             (make-assoc
-              :shapes nil
+              :items-key nil
               :bounds bounds
               :children
               (lets (
@@ -242,7 +242,7 @@
                   )
                 )
                 (loop for cut in cuts
-                  for ss = (remove-if-not (sfun s bounds-intersectp (-> s :bounds) cut) shapes)
+                  for ss = (remove-if-not (sfun s bounds-intersectp (funcall item-bounds s) cut) items)
                   collect (walk-tree ss :bounds cut :cap cap :depth (+ 1 depth))
                 )
               )
@@ -252,9 +252,18 @@
       )
     )
     (make-assoc
-      :shapes (into-vector shapes)
-      :tree (-> shapes give-shapes-id walk-tree)
+      items-key (into-vector items)
+      :tree (-> items give-items-id walk-tree)
     )
+  )
+)
+
+(defun shapes-tree (shapes)
+  (generic-tree shapes
+    :items-key :shapes
+    :item-id (sfun s -> s :id)
+    :item-with-id (sfun (s id) with-vals s :id id)
+    :item-bounds (sfun s -> s :bounds)
   )
 )
 
