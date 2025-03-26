@@ -18,8 +18,8 @@
           bp (-> an (v* (vvv b-rad)) (v+ b-center))
         )
         (make-assoc
-          :point-a ap
-          :point-b bp
+          :point-a bp
+          :point-b ap
           :normal-a an
           :normal-b bn
         )
