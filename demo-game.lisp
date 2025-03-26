@@ -177,7 +177,6 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
-      (debug-level-shapes player (-> res :level-shapes) campos camrot proj-mat)
     )
   )
 )

@@ -18,7 +18,6 @@
           bp (-> an (v* (vvv b-rad)) (v+ b-center))
         )
         (make-assoc
-          :dist dist
           :point-a ap
           :point-b bp
           :normal-a an
@@ -102,7 +101,6 @@
           )
           (when (<= dst 0)
             (make-assoc
-              :dist dst
               :point p
               :normal (norm n)
             )
@@ -370,21 +368,19 @@
               )
             )
             (loop for contact in contacts collect
-              (with-map-keys (normal point dist) contact
+              (with-map-keys (normal point) contact
                 (if reverse
                   (make-assoc
                     :point-a point
                     :point-b point
                     :normal-a (v- normal)
                     :normal-b normal
-                    :dist dist
                   )
                   (make-assoc
                     :point-a point
                     :point-b point
                     :normal-a normal
                     :normal-b (v- normal)
-                    :dist dist
                   )
                 )
               )
@@ -446,34 +442,43 @@
 (defun shapes-tree-sim (shapes-tree delta-time)
   (with-map-keys (shapes tree) shapes-tree
     (labels (
-        (process-sphere-contact (shape point normal dist)
+        (process-sphere-contact (shape point normal)
           (lets (
-              n (v* normal (vvv* -1 dist))
-              center (-> shape :center (v+ n))
-              vel (-> shape :velocity)
-              vd (dot vel normal)
-              vel (if (< vd 0) (v- vel (v* normal (vvv vd))) vel)
-              bounds (sphere-bounds (-> shape :radius) center)
+              center (-> shape :center)
+              radius (-> shape :radius)
+              dist (- (len (v- center point)) radius)
             )
-            (with-vals shape
-              :center center
-              :bounds bounds
-              :velocity vel
+            (if (<= dist 0)
+              (lets (
+                  n (v* normal (vvv* -1 dist))
+                  center (v+ center n)
+                  vel (-> shape :velocity)
+                  vd (dot vel normal)
+                  vel (if (< vd 0) (v- vel (v* normal (vvv vd))) vel)
+                  bounds (sphere-bounds (-> shape :radius) center)
+                )
+                (with-vals shape
+                  :center center
+                  :bounds bounds
+                  :velocity vel
+                )
+              )
+              shape
             )
           )
         )
         (process-contact (contact)
           (with-maps-keys (
-              ((id-a id-b point-a point-b normal-a normal-b dist) contact)
+              ((id-a id-b point-a point-b normal-a normal-b) contact)
               (((a id-a) (b id-b)) shapes)
               (((kind-a :kind)) a)
               (((kind-b :kind)) b)
             )
             (cases kind-a :sphere
-              (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a dist))
+              (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a))
             )
             (cases kind-b :sphere
-              (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b dist))
+              (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b))
             )
           )
         )
