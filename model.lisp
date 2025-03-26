@@ -291,7 +291,7 @@
               vs (make-buffer verts inds 3)
               us (make-buffer uvs inds 2)
               ns (make-buffer normals inds 3)
-              els (gl:alloc-gl-array :unsigned-short (length inds))
+              els (gl:alloc-gl-array :unsigned-int (length inds))
               buffers (gl:gen-buffers 4)
               vert-buf (elt buffers 0)
               uv-buf (elt buffers 1)
