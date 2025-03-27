@@ -81,6 +81,8 @@
       ((level-shapes) res)
     )
     (lets (
+        arrows (arrows-camrot)
+        camrot (v+ (v* arrows (vvv* dt pi 1/2)) camrot)
         cammat (applyv 'mat-rotation camrot)
         mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv 10)))
         player (move-player player mov)
@@ -95,6 +97,7 @@
         :player player
         :non-players non-players
         :campos (v+ (player-pos player) #(0 2 4))
+        :camrot camrot
       )
     )
   )

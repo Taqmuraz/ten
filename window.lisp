@@ -90,12 +90,28 @@
 
 (lets (
     keys (hash)
+    glut->ten (hash
+      :key-left :left
+      :key-right :right
+      :key-down :down
+      :key-up :up
+    )
   )
   (defmethod glut:keyboard ((window window) key x y)
     (setf (gethash key keys) t)
   )
   (defmethod glut:keyboard-up ((window window) key x y)
     (setf (gethash key keys) nil)
+  )
+  (defmethod glut:special ((window window) key x y)
+    (with-map-keys ((k key)) glut->ten
+      (when k (setf (gethash k keys) t))
+    )
+  )
+  (defmethod glut:special-up ((window window) key x y)
+    (with-map-keys ((k key)) glut->ten
+      (when k (setf (gethash k keys) nil))
+    )
   )
   (defun key-state (key)
     (map-key keys key)
@@ -118,6 +134,20 @@
       (when (key-state #\q) (incf (aref r 1) -1))
       (when (key-state #\e) (incf (aref r 1) 1))
       r
+    )
+  )
+  (defun arrows-xy0 ()
+    (lets (r (vector 0 0 0))
+      (when (key-state :left) (incf (aref r 0) -1))
+      (when (key-state :right) (incf (aref r 0) 1))
+      (when (key-state :up) (incf (aref r 1) 1))
+      (when (key-state :down) (incf (aref r 1) -1))
+      r
+    )
+  )
+  (defun arrows-camrot ()
+    (lets (a (arrows-xy0))
+      (vector (- (aref a 1)) (aref a 0) 0)
     )
   )
 )
