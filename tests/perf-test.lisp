@@ -1,3 +1,5 @@
+(ql:quickload "cl-ten")(in-package #:ten)
+
 (macrolet (
     (perf (tag &body body)
       `(progn
