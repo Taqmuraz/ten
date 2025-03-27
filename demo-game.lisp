@@ -83,7 +83,8 @@
     (lets (
         arrows (arrows-camrot)
         camrot (v+ (v* arrows (vvv* dt pi 1/2)) camrot)
-        cammat (applyv 'mat-rotation camrot)
+        cammat (xyz->rotation camrot)
+        camdir (transform-vector cammat #(0 0 1))
         mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv 10)))
         player (move-player player mov)
         players (cons player non-players)
@@ -96,7 +97,7 @@
       (with-vals state
         :player player
         :non-players non-players
-        :campos (v+ (player-pos player) #(0 2 4))
+        :campos (v+ (player-pos player) #(0 2 0) (v* camdir (vvv -4)))
         :camrot camrot
       )
     )
