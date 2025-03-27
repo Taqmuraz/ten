@@ -6,5 +6,5 @@
 
 
 (print
-  (triangle-closest-point #(1/2 0 0) #(1 0 0) #(0 0 0) #(0 1 0) #(0 0 -1))
+  (triangle-closest-point #(1 1 0) #(1 0 0) #(0 0 0) #(0 1 0) #(0 0 -1))
 )

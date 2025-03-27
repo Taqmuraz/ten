@@ -12,9 +12,9 @@
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
         )
       )
-      level-data (-> "res/world/world.fbx" load-model-data)
+      level-data (-> "res/castle/castle.fbx" load-model-data)
       pose-keys (concatenate 'list
-        (list :|castle_red|)
+        (list :|entry|)
       )
       player-poses (last-> pose-keys
         (apply #'select-vals (-> level-data :pose))
