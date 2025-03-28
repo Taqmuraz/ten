@@ -156,8 +156,11 @@
                    (((w :width) (h :height) time) dev))
     (lets (
         players (cons player non-players)
-        proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-        mat-stack (list (mat-pos-rot-inversed campos camrot))
+        proj-mat (mul-mat-4x4
+          (mat-perspective (/ w h) (/ pi 3) 1 1000)
+          (mat-pos-rot-inversed campos camrot)
+        )
+        mat-stack (list (mat-identity 4))
         anim (map-key player-anims 0)
         instances (loop for pos in (mapcar #'player-pos players) collect
           (with-stack-push mat-stack (applyv 'mat-translation pos)
