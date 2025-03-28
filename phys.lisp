@@ -147,6 +147,69 @@
   )
 )
 
+(defun char-shape (radius height center)
+  (make-assoc
+    :kind :char
+    :radius radius
+    :height 2
+    :center center
+    :velocity (vvv 0)
+  )
+)
+
+(defun char-bounds (radius height center)
+  (lets (h (vector radius (/ height 2) radius))
+    (list
+      (v- center h)
+      (v+ center h)
+    )
+  )
+)
+
+(defun char-vs-char (a b)
+  (with-maps-keys (
+      (((a-rad :radius) (a-height :height) (a-center :center)) a)
+      (((b-rad :radius) (b-height :height) (b-center :center)) b)
+    )
+    (lets (
+        dh (abs (- (aref a-center 1) (aref b-center 1)))
+      )
+      (when (<= dh (/ (+ a-height b-height) 2))
+        (lets (
+            d (xyz->x0z (v- a-center b-center))
+            dst (- (len d) (+ a-rad b-rad))
+          )
+          (when (<= dst 0)
+            (lets (
+                n (norm d)
+                an (v- n)
+                bn n
+                ap (v+ a-center (v* an (vvv a-rad)))
+                bp (v+ b-center (v* bn (vvv b-rad)))
+              )
+              (make-assoc
+                :point-a bp
+                :point-b ap
+                :normal-a bn
+                :normal-b an
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+)
+
+(defun char-vs-mesh (char mesh)
+  (with-maps-keys (
+      ((radius center) char)
+      ((triangles-tree) mesh)
+    )
+    (sphere-vs-mesh radius center (sphere-bounds radius center) triangles-tree)
+  )
+)
+
 (defun cover-with-bounds (bounds p)
   (destructuring-bind (min max) bounds
     (list (vmin min p) (vmax max p))
@@ -217,6 +280,7 @@
   (cases (-> shape :kind)
     :sphere (with-map-keys (radius center) shape (sphere-bounds radius center))
     :mesh (-> shape :bounds)
+    :char (with-map-keys (radius height center) shape (char-bounds radius height center))
     t (error (format nil "Cannot calculate bounds for shape ~A" shape))
   )
 )
@@ -387,6 +451,11 @@
           )
         )
       )
+      (cvc (a b)
+        (lets (c (char-vs-char a b))
+          (when c (list c))
+        )
+      )
     )
     (with-maps-keys ((((akind :kind)) a)
                      (((bkind :kind)) b))
@@ -394,6 +463,9 @@
         '(:sphere :sphere) (svs a b)
         '(:sphere :mesh) (svm a b)
         '(:mesh :sphere) (svm b a t)
+        '(:char :char) (cvc a b)
+        '(:char :mesh) (svm a b)
+        '(:mesh :char) (svm b a t)
       )
     )
   )
@@ -465,11 +537,13 @@
               (((kind-a :kind)) a)
               (((kind-b :kind)) b)
             )
-            (cases kind-a :sphere
-              (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a))
+            (cases kind-a
+              :sphere (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a))
+              :char (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a))
             )
-            (cases kind-b :sphere
-              (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b))
+            (cases kind-b
+              :sphere (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b))
+              :char (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b))
             )
           )
         )
@@ -485,17 +559,27 @@
 )
 
 (defun process-forces (shapes delta-time &key (gravity #(0 -9.8 0)))
-  (loop for shape in shapes
-    with dg = (v* gravity (vvv delta-time))
-    collect
-    (cases (-> shape :kind)
-      :sphere (with-map-keys (velocity center) shape
-        (with-vals shape
-          :velocity (v+ velocity dg)
-          :center (v+ center (v* velocity (vvv delta-time)))
+  (lets (
+      dg (v* gravity (vvv delta-time))
+    )
+    (labels (
+        (process-sphere (shape)
+          (with-map-keys (velocity center) shape
+            (with-vals shape
+              :velocity (v+ velocity dg)
+              :center (v+ center (v* velocity (vvv delta-time)))
+            )
+          )
         )
       )
-      t shape
+      (loop for shape in shapes
+        collect
+        (cases (-> shape :kind)
+          :sphere (process-sphere shape)
+          :char (process-sphere shape)
+          t shape
+        )
+      )
     )
   )
 )
