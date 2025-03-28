@@ -505,15 +505,17 @@
 (defun shapes-tree-sim (shapes-tree delta-time)
   (with-map-keys (shapes tree) shapes-tree
     (labels (
-        (process-sphere-contact (shape point normal)
+        (process-sphere-contact (shape other-kind point normal)
           (lets (
               center (-> shape :center)
               radius (-> shape :radius)
               dist (- (len (v- center point)) radius)
+              static-contact (cases other-kind :mesh t)
             )
-            (if (<= dist 0)
+            (if (or (not static-contact) (<= dist 0))
               (lets (
-                  n (v* normal (vvv* -1 dist))
+                  mult (if static-contact 1 1/2)
+                  n (v* normal (vvv* -1 mult dist))
                   center (v+ center n)
                   vel (-> shape :velocity)
                   vd (dot vel normal)
@@ -538,12 +540,12 @@
               (((kind-b :kind)) b)
             )
             (cases kind-a
-              :sphere (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a))
-              :char (setf (aref shapes id-a) (process-sphere-contact a point-a normal-a))
+              :sphere (setf (aref shapes id-a) (process-sphere-contact a kind-b point-a normal-a))
+              :char (setf (aref shapes id-a) (process-sphere-contact a kind-b point-a normal-a))
             )
             (cases kind-b
-              :sphere (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b))
-              :char (setf (aref shapes id-b) (process-sphere-contact b point-b normal-b))
+              :sphere (setf (aref shapes id-b) (process-sphere-contact b kind-a point-b normal-b))
+              :char (setf (aref shapes id-b) (process-sphere-contact b kind-a point-b normal-b))
             )
           )
         )

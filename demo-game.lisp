@@ -122,43 +122,36 @@
   )
 )
 
-(defun debug-level-shapes (player level-shapes campos camrot proj)
+(defun debug-level-shapes (player level-shapes proj)
   (gl:matrix-mode :projection)
   (gl:load-identity)
   (-> proj mat-4x4->vec-16 gl:mult-matrix)
   (gl:matrix-mode :modelview)
   (gl:load-identity)
   (gl:with-pushed-matrix
-    (-> (mat-pos-rot-inversed campos camrot) mat-4x4->vec-16 gl:mult-matrix)
-    (gl:with-pushed-matrix
-      (applyv #'gl:translate (-> player :shape :center))
-      (gl:rotate 90 1 0 0)
-      (gl:color 1 0 0 1)
-      (glut:wire-sphere (-> player :shape :radius) 16 16)
-    )
-    (gl:with-primitives :lines
-      (gl:color 0 0 1 1)
-      (with-maps-keys (((shape) player)
-                       ((radius center bounds) shape))
-        (loop for s in level-shapes do
-          (when (bounds-intersectp (-> s :bounds) bounds)
-            (loop for f in (-> s :triangles) do
-              (when (sphere-vs-triangle radius center (car f) (cadr f))
-                (gl:color 1 1 1 1)
-                (with-items (a b c) (car f)
-                  (labels (
-                      (line (a b)
-                        (applyv #'gl:vertex a)
-                        (applyv #'gl:vertex b)
-                      )
-                    )
-                    (line a b)
-                    (line a c)
-                    (line b c)
-                    (gl:color 1 1 0 1)
-                    (line center (triangle-closest-point center a b c (cadr f)))
+    (applyv #'gl:translate (-> player :shape :center))
+    (gl:rotate 90 1 0 0)
+    (gl:color 1 0 0 1)
+    (glut:wire-sphere (-> player :shape :radius) 16 16)
+  )
+  (gl:with-primitives :lines
+    (with-maps-keys (((shape) player)
+                     ((radius center) shape)
+                     (((bounds shape)) #'shape-bounds))
+      (loop for s in level-shapes do
+        (when (bounds-intersectp (shape-bounds s) bounds)
+          (loop for f in (-> s :triangles) do
+            (gl:color 0 1 0 1)
+            (with-items (a b c) (car f)
+              (labels (
+                  (line (a b)
+                    (applyv #'gl:vertex a)
+                    (applyv #'gl:vertex b)
                   )
                 )
+                (line a b)
+                (line a c)
+                (line b c)
               )
             )
           )
@@ -199,6 +192,7 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
+      (debug-level-shapes player (-> res :level-shapes) proj-mat)
     )
   )
 )
