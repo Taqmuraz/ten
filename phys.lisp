@@ -201,7 +201,7 @@
 )
 
 (defun sphere-bounds (rad center)
-  (list (v- center (vvv rad)) (v+ center (vvv rad)))
+  (list (mv3- center (vvv rad)) (mv3+ center (vvv rad)))
 )
 
 (defun sphere-shape (rad center)
@@ -209,34 +209,15 @@
     :kind :sphere
     :radius rad
     :center center
-    :bounds (sphere-bounds rad center)
     :velocity (vvv 0)
   )
 )
 
-(defun update-sphere-center (sphere func)
-  (with-map-keys (radius center) shape
-    (lets (
-        center (funcall func center)
-      )
-      (with-vals shape
-        :center center
-        :bounds (sphere-bounds radius center)
-      )
-    )
-  )
-)
-
-(defun recalc-sphere-bounds (sphere)
-  (with-map-keys (radius center) sphere
-    (with-vals sphere :bounds (sphere-bounds radius center))
-  )
-)
-
-(defun recalc-shape-bounds (shape)
+(defun shape-bounds (shape)
   (cases (-> shape :kind)
-    :sphere (recalc-sphere-bounds shape)
-    t shape
+    :sphere (with-map-keys (radius center) shape (sphere-bounds radius center))
+    :mesh (-> shape :bounds)
+    t (error (format nil "Cannot calculate bounds for shape ~A" shape))
   )
 )
 
@@ -350,7 +331,7 @@
   (generic-tree shapes
     :items-key :shapes
     :item-id (sfun s -> s :id)
-    :item-with-id (sfun (s id) with-vals s :id id)
+    :item-with-id (sfun (s id) with-vals s :id id :bounds (shape-bounds s))
     :item-bounds (sfun s -> s :bounds)
   )
 )
@@ -369,8 +350,9 @@
 (defun shapes-contacts (a b)
   (labels (
       (svm (a b &optional reverse)
-        (with-maps-keys (((radius center (abounds :bounds)) a)
-                         ((triangles-tree (bbounds :bounds)) b))
+        (with-maps-keys (((radius center) a)
+                         ((triangles-tree (bbounds :bounds)) b)
+                         (((abounds a)) #'shape-bounds))
           (lets (
               contacts (when (bounds-intersectp abounds bbounds)
                 (sphere-vs-mesh radius center abounds triangles-tree)
@@ -508,10 +490,10 @@
     collect
     (cases (-> shape :kind)
       :sphere (with-map-keys (velocity center) shape
-        (recalc-shape-bounds (with-vals shape
+        (with-vals shape
           :velocity (v+ velocity dg)
           :center (v+ center (v* velocity (vvv delta-time)))
-        ))
+        )
       )
       t shape
     )
