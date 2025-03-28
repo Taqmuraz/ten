@@ -12,9 +12,10 @@
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
         )
       )
-      level-data (-> "res/castle/castle.fbx" load-model-data)
+      level-data (-> "res/castle/castle_desert.fbx" load-model-data)
       pose-keys (concatenate 'list
         (list :|entry|)
+        (list :|guard_0| :|guard_1| :|guard_2| :|guard_3|)
       )
       player-poses (last-> pose-keys
         (apply #'select-vals (-> level-data :pose))
@@ -45,9 +46,24 @@
 
 (defun move-player (player mov)
   (update player
-    (sfun s update s (sfun v progn mov) :velocity)
+    (sfun s update s
+      (sfun v with-vector-items (vx vy vz) v
+        (with-vector-items (mx my mz) mov
+          (vector mx vy mz)
+        )
+      )
+      :velocity
+    )
     :shape
   )
+)
+
+(defun player-next (player time delta-time)
+  (move-player player (-> (wasd-x0z) norm (v* (vvv 5))))
+)
+
+(defun non-player-next (player time delta-time)
+  (move-player player #(0 0 0))
 )
 
 (defun player-pos (player)
@@ -76,7 +92,7 @@
 
 (defun demo-game-next (dev res state)
   (with-maps-keys (
-      (((dt :delta-time)) dev)
+      ((time (dt :delta-time)) dev)
       ((campos camrot player non-players) state)
       ((level-shapes) res)
     )
@@ -93,6 +109,8 @@
         players (mapcar (sfun (p s) with-vals p :shape s) players shapes)
         player (car players)
         non-players (cdr players)
+        player (player-next player time dt)
+        non-players (mapcar (sfun p non-player-next p time dt) non-players)
       )
       (with-vals state
         :player player
