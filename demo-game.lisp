@@ -12,16 +12,8 @@
           (uiop:read-file-string "res/shaders/instancing_fragment.glsl")
         )
       )
-      level-data (-> "res/castle/castle_desert.fbx" load-model-data)
-      pose-keys (concatenate 'list
-        (list :|entry|)
-        ;; (list :|guard_0| :|guard_1| :|guard_2| :|guard_3|)
-      )
-      player-poses (last-> pose-keys
-        (apply #'select-vals (-> level-data :pose))
-        (map-by-key 'list 3)
-        (mapcar (sfun x take x 3))
-      )
+      level-data (-> "res/arena/arena.fbx" load-model-data)
+      player-poses (loop for i from 0 below 100 collect (vector (floor i 10) 0 (mod i 10)))
       level-model (-> level-data load-model-to-gl load-gl-group)
       player-model (-> "res/chars/archer_anims.fbx" load-model-data load-model-to-gl load-gl-group)
       player-anims (-> player-model :anims vals into-vector)
@@ -197,7 +189,7 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
-      (debug-level-shapes player (-> res :level-shapes) proj-mat)
+      ;; (debug-level-shapes player (-> res :level-shapes) proj-mat)
     )
   )
 )

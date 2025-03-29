@@ -27,13 +27,12 @@
   )
   (format t "~%")
   (lets (
-      m "res/castle/castle_desert.fbx"
-      pt (-> m load-model-data :pose :|entry| (transform-point (vvv 0)))
+      m "res/arena/arena.fbx"
       ms (perf "load-model-data + model-mesh-shapes"
         (-> m load-model-data model-mesh-shapes)
       )
       ss (perf "sphere-shape x20"
-        (loop for i from 0 below 20 collect (sphere-shape 1/4 (v+ pt (vector 0 0 i))))
+        (loop for i from 0 below 200 collect (char-shape 1/2 2 (vector (floor i 10) 0 (mod i 10))))
       )
       as (append ss ms)
       dt 1/50
