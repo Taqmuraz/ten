@@ -40,7 +40,7 @@
 
 (defun demo-game-player (pos)
   (make-assoc
-    :shape (char-shape 1/2 2 (v+ pos #(0 1/2 0)))
+    :shape (char-shape 1/2 10 (v+ pos #(0 1/2 0)))
   )
 )
 

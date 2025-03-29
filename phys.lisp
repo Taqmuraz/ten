@@ -124,12 +124,13 @@
   (with-items (a b c) points
     (when (-> center (v- b) (dot normal) (>= 0))
       (lets (
-          c (triangle-closest-point center a b c normal)
-          d (v- c center)
+          p (triangle-closest-point center a b c normal)
+          d (v- p center)
           dh (abs (aref d 1))
           hh (/ height 2)
+          dxz (xyz->x0z d)
         )
-        (when (<= dh hh)
+        (when (and (<= dh hh) (<= (len dxz) rad))
           (lets (
               dn (norm d)
               l (sqrt (+ (* rad rad) (* hh hh)))
@@ -137,11 +138,11 @@
               n (conds
                 (>= dny hh) (vector 0 -1 0)
                 (<= dny (- hh)) (vector 0 1 0)
-                t (with-vector-items (x y z) dn (norm (vector (- x) 0 (- z))))
+                t (-> dxz v- norm)
               )
             )
             (make-assoc
-              :point c
+              :point p
               :normal n
             )
           )
@@ -216,7 +217,7 @@
   (make-assoc
     :kind :char
     :radius radius
-    :height 2
+    :height height
     :center center
     :velocity (vvv 0)
   )
