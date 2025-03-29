@@ -518,6 +518,8 @@
     :item-id (sfun s -> s :id)
     :item-with-id (sfun (s id) with-vals s :id id :bounds (shape-bounds s))
     :item-bounds (sfun s -> s :bounds)
+    :max-depth 5
+    :cap 5
   )
 )
 
