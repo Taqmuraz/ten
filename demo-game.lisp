@@ -38,9 +38,17 @@
   )
 )
 
-(defun demo-game-player (pos)
-  (make-assoc
-    :shape (char-shape 1/2 10 (v+ pos #(0 1/2 0)))
+(lets (
+    player-height 2.2
+    player-height/2 (/ player-height 2)
+  )
+  (defun demo-game-player (pos)
+    (make-assoc
+      :shape (char-shape 1/2 player-height (v+ pos (vector 0 player-height/2 0)))
+    )
+  )
+  (defun player-pos (player)
+    (-> player :shape :center (v- (vector 0 player-height/2 0)))
   )
 )
 
@@ -64,10 +72,6 @@
 
 (defun non-player-next (player time delta-time)
   (move-player player #(0 0 0))
-)
-
-(defun player-pos (player)
-  (-> player :shape :center (v- #(0 1/2 0)))
 )
 
 (defun demo-game-setup ()
@@ -127,11 +131,13 @@
   (-> proj mat-4x4->vec-16 gl:mult-matrix)
   (gl:matrix-mode :modelview)
   (gl:load-identity)
-  (gl:with-pushed-matrix
-    (applyv #'gl:translate (-> player :shape :center))
-    (gl:rotate 90 1 0 0)
-    (gl:color 1 0 0 1)
-    (glut:wire-sphere (-> player :shape :radius) 16 16)
+  (with-map-keys (radius height center) (-> player :shape)
+    (gl:with-pushed-matrix
+      (applyv #'gl:translate center)
+      (gl:scale (* radius 2) height (* radius 2))
+      (gl:color 1 0 0 1)
+      (glut:wire-cube 1)
+    )
   )
   (gl:with-primitives :lines
     (with-maps-keys (((shape) player)

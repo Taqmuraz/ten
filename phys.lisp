@@ -389,7 +389,7 @@
         )
         (conds
           (zerop (len dxz)) (v+ center (vector 0 (closest dy (- hh) hh) 0))
-          (and (<= dy hh) (<= (- hh) dy)) (v+
+          (and (<= dy (- hh radius)) (<= (+ (- hh) radius) dy)) (v+
             center
             (v* (norm dxz) (vvv radius))
             (vector 0 dy 0)
