@@ -99,9 +99,8 @@
     (lets (
         arrows (arrows-camrot)
         camrot (v+ (v* arrows (vvv* dt pi 1/2)) camrot)
-        cammat (xyz->rotation camrot)
-        camdir (transform-vector cammat #(0 0 1))
-        mov (transform-vector cammat (v* (norm (wasd-xyz)) (vvv 10)))
+        camdir (transform-vector (xyz->rotation camrot) #(0 0 1))
+        mov (transform-vector (mat-rotation-y (aref camrot 1)) (v* (norm (wasd-xyz)) (vvv 10)))
         player (move-player player mov)
         players (cons player non-players)
         shapes (append (map-by-key 'list :shape players) level-shapes)
