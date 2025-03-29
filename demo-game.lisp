@@ -49,7 +49,7 @@
     (sfun s update s
       (sfun v with-vector-items (vx vy vz) v
         (with-vector-items (mx my mz) mov
-          (vector mx vy mz)
+          (vector mx my mz)
         )
       )
       :velocity

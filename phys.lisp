@@ -341,6 +341,39 @@
   )
 )
 
+(defun shape-closest-point (shape point)
+  (cases (-> shape :kind)
+    :sphere (with-map-keys (radius center) shape
+      (lets (
+          d (v- point center)
+        )
+        (if (<= radius (len d))
+          (v+ center (v* (vvv radius) (norm d)))
+          point
+        )
+      )
+    )
+    :char (with-map-keys (radius height center) shape
+      (lets (
+          hh (/ height 2)
+          d (v- point center)
+          dxz (xyz->x0z d)
+          dy (aref d 1)
+        )
+        (if (or (<= (len dxz) radius) (<= (- hh) dy hh))
+          point
+          (v+
+            center
+            (clamp-length dxz radius)
+            (vector 0 (max (- hh) (min hh dy)) 0)
+          )
+        )
+      )
+    )
+    t (error (format "Can't find closest point on shape ~A" shape))
+  )
+)
+
 (defun mesh-shape (mesh transform)
   (with-map-keys (faces verts) mesh
     (lets (
