@@ -341,7 +341,7 @@
   )
 )
 
-(defun shape-closest-point (shape point)
+(defun closest-point-in-shape (shape point)
   (cases (-> shape :kind)
     :sphere (with-map-keys (radius center) shape
       (lets (
@@ -360,12 +360,43 @@
           dxz (xyz->x0z d)
           dy (aref d 1)
         )
-        (if (or (<= (len dxz) radius) (<= (- hh) dy hh))
+        (if (and (<= (len dxz) radius) (<= (- hh) dy hh))
           point
           (v+
             center
             (clamp-length dxz radius)
             (vector 0 (max (- hh) (min hh dy)) 0)
+          )
+        )
+      )
+    )
+    t (error (format "Can't find closest point on shape ~A" shape))
+  )
+)
+
+(defun closest-point-on-shape (shape point)
+  (cases (-> shape :kind)
+    :sphere (with-map-keys (radius center) shape
+      (v+ center (v* (vvv radius) (norm (v- point center))))
+    )
+    :char (with-map-keys (radius height center) shape
+      (lets (
+          hh (/ height 2)
+          d (v- point center)
+          dxz (xyz->x0z d)
+          dy (aref d 1)
+        )
+        (conds
+          (zerop (len dxz)) (v+ center (vector 0 (closest dy (- hh) hh) 0))
+          (and (<= dy hh) (<= (- hh) dy)) (v+
+            center
+            (v* (norm dxz) (vvv radius))
+            (vector 0 dy 0)
+          )
+          t (v+
+            center
+            (clamp-length dxz radius)
+            (vector 0 (closest dy (- hh) hh) 0)
           )
         )
       )
@@ -588,13 +619,14 @@
           (lets (
               center (-> shape :center)
               radius (-> shape :radius)
-              dist (- (len (v- center point)) radius)
+              point-to-in (len (v- point (closest-point-in-shape shape point)))
+              point-to-on (len (v- point (closest-point-on-shape shape point)))
               static-contact (cases other-kind :mesh t)
             )
-            (if (or (not static-contact) (<= dist 0))
+            (if (or (not static-contact) (zerop point-to-in))
               (lets (
                   mult (if static-contact 1 1/2)
-                  n (v* normal (vvv* -1 mult dist))
+                  n (v* normal (vvv* mult point-to-on))
                   center (v+ center n)
                   vel (-> shape :velocity)
                   vd (dot vel normal)

@@ -15,7 +15,7 @@
       level-data (-> "res/castle/castle_desert.fbx" load-model-data)
       pose-keys (concatenate 'list
         (list :|entry|)
-        (list :|guard_0| :|guard_1| :|guard_2| :|guard_3|)
+        ;; (list :|guard_0| :|guard_1| :|guard_2| :|guard_3|)
       )
       player-poses (last-> pose-keys
         (apply #'select-vals (-> level-data :pose))
