@@ -32,5 +32,5 @@
   )
   :build-operation "program-op"
   :build-pathname "ten-build"
-  :entry-point "ten:start-demo"
+  :entry-point "ten:start-demo-game"
 )

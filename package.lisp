@@ -2,5 +2,5 @@
 
 (defpackage #:ten
   (:use #:cl #:taclib #:eager-future2)
-  (:export #:start-demo)
+  (:export #:start-demo-game)
 )
