@@ -613,7 +613,7 @@
   )
 )
 
-(defun shapes-tree-sim (shapes-tree delta-time)
+(defun process-shapes-tree-contacts (shapes-tree contacts delta-time)
   (with-map-keys (shapes tree) shapes-tree
     (labels (
         (process-sphere-contact (shape other-kind point normal)
@@ -662,14 +662,14 @@
           )
         )
       )
-      (lets (
-          contacts (shapes-tree-contacts shapes-tree)
-        )
-        (mapc #'process-contact contacts)
-        (coerce shapes 'list)
-      )
+      (mapc #'process-contact contacts)
+      (coerce shapes 'list)
     )
   )
+)
+
+(defun shapes-tree-sim (shapes-tree delta-time)
+  (process-shapes-tree-contacts shapes-tree (shapes-tree-contacts shapes-tree) delta-time)
 )
 
 (defun process-forces (shapes delta-time &key (gravity #(0 -9.8 0)))
