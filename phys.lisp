@@ -151,43 +151,46 @@
   )
 )
 
-(defun anything-vs-mesh (bounds triangles-tree testp)
-  (lets (r nil h (hash))
-    (labels (
-        (walk-tree (triangles node)
-          (with-map-keys ((ids :triangles) (tbounds :bounds) children) node
-            (when (bounds-intersectp bounds tbounds)
-              (loop for id in ids do
-                (hash-once id h
-                  (lets (
-                      pn (aref triangles id)
-                      c (funcall testp (car pn) (cadr pn))
+(defmacro anything-vs-mesh (bounds triangles-tree (points-var normal-var) &body test)
+  (once (bounds triangles-tree)
+    `(lets (r nil h (hash))
+      (labels (
+          (walk-tree (triangles node)
+            (with-map-keys ((ids :triangles) (tbounds :bounds) children) node
+              (when (bounds-intersectp ,bounds tbounds)
+                (loop for id in ids do
+                  (hash-once id h
+                    (lets (
+                        pn (aref triangles id)
+                        c (lets (
+                            ,points-var (car pn)
+                            ,normal-var (cadr pn)
+                          )
+                          (,@test)
+                        )
+                      )
+                      (when c (push c r))
                     )
-                    (when c (push c r))
                   )
                 )
+                (loop for c in children do (walk-tree triangles c))
               )
-              (loop for c in children do (walk-tree triangles c))
             )
           )
         )
+        (with-map-keys (triangles tree) ,triangles-tree (walk-tree triangles tree))
+        r
       )
-      (with-map-keys (triangles tree) triangles-tree (walk-tree triangles tree))
-      r
     )
   )
 )
 
 (defun sphere-vs-mesh (rad center bounds triangles-tree)
-  (anything-vs-mesh bounds triangles-tree
-    (sfun (points normal) sphere-vs-triangle rad center points normal)
-  )
+  (anything-vs-mesh bounds triangles-tree (points normal) sphere-vs-triangle rad center points normal)
 )
 
 (defun char-vs-mesh (rad height center bounds triangles-tree)
-  (anything-vs-mesh bounds triangles-tree
-    (sfun (points normal) char-vs-triangle rad height center points normal)
-  )
+  (anything-vs-mesh bounds triangles-tree (points normal) char-vs-triangle rad height center points normal)
 )
 
 (defun shape-vs-mesh (shape mesh)
