@@ -120,7 +120,38 @@
   )
 )
 
-(defun sphere-vs-mesh (rad center bounds triangles-tree)
+(defun char-vs-triangle (rad height center points normal)
+  (with-items (a b c) points
+    (when (-> center (v- b) (dot normal) (>= 0))
+      (lets (
+          c (triangle-closest-point center a b c normal)
+          d (v- c center)
+          dh (abs (aref d 1))
+          hh (/ height 2)
+        )
+        (when (<= dh hh)
+          (lets (
+              dn (norm d)
+              l (sqrt (+ (* rad rad) (* hh hh)))
+              dny (* l (aref dn 1))
+              n (conds
+                (>= dny hh) (vector 0 -1 0)
+                (<= dny (- hh)) (vector 0 1 0)
+                t (with-vector-items (x y z) dn (norm (vector (- x) 0 (- z))))
+              )
+            )
+            (make-assoc
+              :point c
+              :normal n
+            )
+          )
+        )
+      )
+    )
+  )
+)
+
+(defun anything-vs-mesh (bounds triangles-tree testp)
   (lets (r nil h (hash))
     (labels (
         (walk-tree (triangles node)
@@ -130,7 +161,7 @@
                 (hash-once id h
                   (lets (
                       pn (aref triangles id)
-                      c (sphere-vs-triangle rad center (car pn) (cadr pn))
+                      c (funcall testp (car pn) (cadr pn))
                     )
                     (when c (push c r))
                   )
@@ -143,6 +174,37 @@
       )
       (with-map-keys (triangles tree) triangles-tree (walk-tree triangles tree))
       r
+    )
+  )
+)
+
+(defun sphere-vs-mesh (rad center bounds triangles-tree)
+  (anything-vs-mesh bounds triangles-tree
+    (sfun (points normal) sphere-vs-triangle rad center points normal)
+  )
+)
+
+(defun char-vs-mesh (rad height center bounds triangles-tree)
+  (anything-vs-mesh bounds triangles-tree
+    (sfun (points normal) char-vs-triangle rad height center points normal)
+  )
+)
+
+(defun shape-vs-mesh (shape mesh)
+  (lets (
+      sbounds (shape-bounds shape)
+    )
+    (with-map-keys (triangles-tree bounds) mesh
+      (when (bounds-intersectp bounds sbounds)
+        (cases (-> shape :kind)
+          :sphere (with-map-keys (radius center) shape
+            (sphere-vs-mesh radius center sbounds triangles-tree)
+          )
+          :char (with-map-keys (radius center height) shape
+            (char-vs-mesh radius height center sbounds triangles-tree)
+          )
+        )
+      )
     )
   )
 )
@@ -198,15 +260,6 @@
         )
       )
     )
-  )
-)
-
-(defun char-vs-mesh (char mesh)
-  (with-maps-keys (
-      ((radius center) char)
-      ((triangles-tree) mesh)
-    )
-    (sphere-vs-mesh radius center (sphere-bounds radius center) triangles-tree)
   )
 )
 
@@ -414,30 +467,20 @@
 (defun shapes-contacts (a b)
   (labels (
       (svm (a b &optional reverse)
-        (with-maps-keys (((radius center) a)
-                         ((triangles-tree (bbounds :bounds)) b)
-                         (((abounds a)) #'shape-bounds))
-          (lets (
-              contacts (when (bounds-intersectp abounds bbounds)
-                (sphere-vs-mesh radius center abounds triangles-tree)
+        (loop for contact in (shape-vs-mesh a b) collect
+          (with-map-keys (normal point) contact
+            (if reverse
+              (make-assoc
+                :point-a point
+                :point-b point
+                :normal-a (v- normal)
+                :normal-b normal
               )
-            )
-            (loop for contact in contacts collect
-              (with-map-keys (normal point) contact
-                (if reverse
-                  (make-assoc
-                    :point-a point
-                    :point-b point
-                    :normal-a (v- normal)
-                    :normal-b normal
-                  )
-                  (make-assoc
-                    :point-a point
-                    :point-b point
-                    :normal-a normal
-                    :normal-b (v- normal)
-                  )
-                )
+              (make-assoc
+                :point-a point
+                :point-b point
+                :normal-a normal
+                :normal-b (v- normal)
               )
             )
           )
