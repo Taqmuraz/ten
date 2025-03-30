@@ -59,7 +59,7 @@
       (clamp (x min max) (min max (max min x)))
       (on-plane (p o x y)
         (lets (d (mv3- p o))
-          (vector (dot d x) (dot d y))
+          (vector (mdotv3 d x) (mdotv3 d y))
         )
       )
       (subcut (p a b c)
@@ -76,7 +76,7 @@
       )
       (cut (p a b c)
         (lets (
-            x (norm (mv3- a b))
+            x (mnormv3 (mv3- a b))
             y (cross x normal)
             pp (on-plane p b x y)
             ap (on-plane a b x y)
@@ -122,17 +122,17 @@
 
 (defun char-vs-triangle (rad height center points normal)
   (with-items (a b c) points
-    (when (-> center (v- b) (dot normal) (>= 0))
+    (when (-> center (mv3- b) (mdotv3 normal) (>= 0))
       (lets (
           p (triangle-closest-point center a b c normal)
-          d (v- p center)
+          d (mv3- p center)
           dh (abs (aref d 1))
           hh (/ height 2)
           dxz (xyz->x0z d)
         )
-        (when (and (<= dh hh) (<= (len dxz) rad))
+        (when (and (<= dh hh) (<= (mlenv3 dxz) rad))
           (lets (
-              dn (norm d)
+              dn (mnormv3 d)
               l (sqrt (+ (* rad rad) (* hh hh)))
               dny (* l (aref dn 1))
               n (conds
@@ -242,16 +242,16 @@
       )
       (when (<= dh (/ (+ a-height b-height) 2))
         (lets (
-            d (xyz->x0z (v- a-center b-center))
-            dst (- (len d) (+ a-rad b-rad))
+            d (xyz->x0z (mv3- a-center b-center))
+            dst (- (mlenv3 d) (+ a-rad b-rad))
           )
           (when (<= dst 0)
             (lets (
-                n (norm d)
-                an (v- n)
+                n (mnormv3 d)
+                an (uvec vector - n)
                 bn n
-                ap (v+ a-center (v* an (vvv a-rad)))
-                bp (v+ b-center (v* bn (vvv b-rad)))
+                ap (mv3+ a-center (mv3* an (vvv a-rad)))
+                bp (mv3+ b-center (mv3* bn (vvv b-rad)))
               )
               (make-assoc
                 :point-a bp
