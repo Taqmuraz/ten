@@ -233,31 +233,30 @@
 )
 
 (defun char-vs-char (a b)
-  (with-maps-keys (
-      (((a-rad :radius) (a-height :height) (a-center :center)) a)
-      (((b-rad :radius) (b-height :height) (b-center :center)) b)
-    )
-    (lets (
-        dh (abs (- (aref a-center 1) (aref b-center 1)))
-      )
-      (when (<= dh (/ (+ a-height b-height) 2))
-        (lets (
-            d (xyz->x0z (mv3- a-center b-center))
-            dst (- (mlenv3 d) (+ a-rad b-rad))
-          )
-          (when (<= dst 0)
-            (lets (
-                n (mnormv3 d)
-                an (uvec vector - n)
-                bn n
-                ap (mv3+ a-center (mv3* an (vvv a-rad)))
-                bp (mv3+ b-center (mv3* bn (vvv b-rad)))
-              )
-              (make-assoc
-                :point-a bp
-                :point-b ap
-                :normal-a bn
-                :normal-b an
+  (with-assoc-items (a-kind a-rad a-height a-center) a
+    (with-assoc-items (b-kind b-rad b-height b-center) b
+      (lets (
+          dh (abs (- (aref a-center 1) (aref b-center 1)))
+        )
+        (when (<= dh (/ (+ a-height b-height) 2))
+          (lets (
+              d (xyz->x0z (mv3- a-center b-center))
+              dst (- (mlenv3 d) (+ a-rad b-rad))
+            )
+            (when (<= dst 0)
+              (lets (
+                  n (mnormv3 d)
+                  an (uvec vector - n)
+                  bn n
+                  ap (mv3+ a-center (mv3* an (vvv a-rad)))
+                  bp (mv3+ b-center (mv3* bn (vvv b-rad)))
+                )
+                (make-assoc
+                  :point-a bp
+                  :point-b ap
+                  :normal-a bn
+                  :normal-b an
+                )
               )
             )
           )
