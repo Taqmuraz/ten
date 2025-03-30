@@ -8,7 +8,6 @@
   :serial t
   :depends-on (
     #:taclib
-    #:atomics
     #:classimp
     #:cl-opengl
     #:cl-glut

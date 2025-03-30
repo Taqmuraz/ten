@@ -585,61 +585,33 @@
 )
 
 (defun shapes-tree-contacts (shapes-tree)
-  (lets (memory (atomic (hash)))
+  (lets (r nil c (hash))
     (with-map-keys (shapes tree) shapes-tree
       (labels (
           (walk-tree (node)
             (with-map-keys ((ids :shapes) children) node
-              (remove-if #'null (apply #'concatenate 'list (loop
-                with r = nil
-                for (id1 id2) in (all-possible-pairs ids)
+              (loop for (id1 id2) in (all-possible-pairs ids)
                 for p = (list id1 id2)
-                do (swap-atomic-value mem memory
-                  (hash-once p mem
-                    (with-map-keys ((s1 id1) (s2 id2)) shapes
-                      (lets (
-                          cs (shapes-contacts s1 s2)
-                        )
-                        (when cs (setf r
-                          (append r (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)))
-                        )
-                      )
-                    )
-                  )
-                  mem
-                )
-                finally (return r)
-              ) (mapcar #'walk-tree children)))
-            )
-          )
-        )
-        (with-map-keys (children) tree
-          (if nil; children
-            (lets (
-                l (length children)
-                ctr (atomic 0)
-                result (atomic nil)
-              )
-              (loop for (a b c d) on children by #'cddddr collect
-                (bt:make-thread
-                  (lambda ()
+                do (hash-once p c
+                  (with-map-keys ((s1 id1) (s2 id2)) shapes
                     (lets (
-                        cs (append (walk-tree a) (walk-tree b) (walk-tree c) (walk-tree d))
+                        cs (shapes-contacts s1 s2)
                       )
-                      (swap-atomic-value r result (append r cs))
-                      (swap-atomic-value c ctr (+ c 4))
+                      (when cs (setf r
+                        (append r (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)))
+                      )
                     )
                   )
                 )
               )
-              (do () ((>= (atomic-value ctr) l)))
-              (atomic-value result)
+              (mapc #'walk-tree children)
             )
-            (walk-tree tree)
           )
         )
+        (walk-tree tree)
       )
     )
+    r
   )
 )
 
