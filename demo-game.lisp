@@ -36,6 +36,8 @@
   )
   (defun demo-game-player (pos)
     (make-assoc
+      :look (vector 0 0 1)
+      :anim 0
       :shape (char-shape 1/2 player-height (v+ pos (vector 0 player-height/2 0)))
     )
   )
@@ -58,8 +60,19 @@
   )
 )
 
-(defun player-next (player time delta-time)
-  (move-player player (-> (wasd-x0z) norm (v* (vvv 5))))
+(defun player-next (player cammat time delta-time)
+  (lets (
+      mov (last-> (wasd-x0z) norm (transform-vector cammat))
+      no-move (-> mov len zerop)
+      look (if no-move (-> player :look) mov)
+      anim (if no-move 0 1)
+      player (move-player player (v* mov (vvv 3)))
+    )
+    (with-vals player
+      :anim anim
+      :look look
+    )
+  )
 )
 
 (defun non-player-next (player time delta-time)
@@ -96,15 +109,14 @@
         arrows (arrows-camrot)
         camrot (v+ (v* arrows (vvv* dt pi 1/2)) camrot)
         camdir (transform-vector (xyz->rotation camrot) #(0 0 1))
-        mov (transform-vector (mat-rotation-y (aref camrot 1)) (v* (norm (wasd-xyz)) (vvv 10)))
-        player (move-player player mov)
+        cammat (mat-rotation-y (aref camrot 1))
         players (cons player non-players)
         shapes (append (map-by-key 'list :shape players) level-shapes)
         shapes (shapes-fixed-cycle shapes dt)
         players (mapcar (sfun (p s) with-vals p :shape s) players shapes)
         player (car players)
         non-players (cdr players)
-        player (player-next player time dt)
+        player (player-next player cammat time dt)
         non-players (mapcar (sfun p non-player-next p time dt) non-players)
       )
       (with-vals state
@@ -169,13 +181,23 @@
           (mat-pos-rot-inversed campos camrot)
         )
         mat-stack (list (mat-identity 4))
-        anim (map-key player-anims 0)
-        instances (loop for pos in (mapcar #'player-pos players) collect
-          (with-stack-push mat-stack (applyv 'mat-translation pos)
-            (make-assoc
-              :root (car mat-stack)
-              :pose (animate anim time)
-              :anim (make-assoc :index 0 :time time :length (-> anim :length))
+        instances (loop for player in players collect
+          (lets (
+              anim-index (-> player :anim)
+              anim (map-key player-anims anim-index)
+              pos (player-pos player)
+              look (-> player :look)
+            )
+            (with-stack-push mat-stack
+              (mul-mat-4x4
+                (applyv 'mat-translation pos)
+                (-> look look->rotation xyz->rotation)
+              )
+              (make-assoc
+                :root (car mat-stack)
+                :pose (animate anim time)
+                :anim (make-assoc :index anim-index :time time :length (-> anim :length))
+              )
             )
           )
         )
