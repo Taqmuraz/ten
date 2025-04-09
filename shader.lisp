@@ -5,13 +5,13 @@
     `(lets (,v ,m)
       (vector ,@(loop for i from 0 below 4 append
         (loop for j from 0 below 4 collect
-          `(aref (aref ,v ,i) ,j)))))))
+          `(elt (elt ,v ,i) ,j)))))))
 
 (defmacro mmat-from-gl (m)
   (lets (v (gensym))
     `(lets (,v ,m)
-      (vector ,@(loop for j from 0 below 4 collect
-        `(vector ,@(loop for i from 0 below 4 collect
+      (list ,@(loop for j from 0 below 4 collect
+        `(list ,@(loop for i from 0 below 4 collect
           `(aref ,v ,(+ i (* j 4))))))))))
 
 (defun mat-to-gl (m) (mmat-to-gl m))
