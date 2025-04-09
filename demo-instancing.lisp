@@ -19,10 +19,10 @@
   )
 )
 
-(defun demo-instancing-setup (file)
+(defun demo-instancing-setup (file count)
   (make-assoc
     :res (demo-instancing-res file)
-    :state (make-assoc :campos (vector 0 0 -5))
+    :state (make-assoc :count count :campos (vector 0 0 -5))
     :next 'demo-instancing-next
     :display 'demo-instancing-display
   )
@@ -36,14 +36,14 @@
 
 (defun demo-instancing-display (dev res state)
   (with-maps-keys (((scene anim shaders) res)
-                   ((campos) state)
+                   ((campos count) state)
                    (((w :width) (h :height) time) dev))
     (lets (
         proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
         mat-stack (last-> campos v- (applyv #'mat-translation) list)
         rot-mat (mat-rotation 0 pi 0)
         instances (with-stack-push mat-stack rot-mat
-          (loop for i from 0 below 1000 collect
+          (loop for i from 0 below count collect
             (make-assoc
               :anim (make-assoc :index 1 :time (+ time (/ i 50)) :length (-> anim :length))
               :pose (animate anim (+ time (/ i 50)))
@@ -64,6 +64,6 @@
   )
 )
 
-(defun start-demo-instancing (file)
-  (glut:display-window (make-instance 'window :setup-func (mpart demo-instancing-setup file)))
+(defun start-demo-instancing (file count)
+  (glut:display-window (make-instance 'window :setup-func (mpart demo-instancing-setup file count)))
 )
