@@ -233,8 +233,8 @@
 )
 
 (defun char-vs-char (a b)
-  (with-assoc-items (a-kind a-rad a-height a-center) a
-    (with-assoc-items (b-kind b-rad b-height b-center) b
+  (with-map-keys ((a-kind :kind) (a-rad :radius) (a-height :height) (a-center :center)) a
+    (with-map-keys ((b-kind :kind) (b-rad :radius) (b-height :height) (b-center :center)) b
       (lets (
           dh (abs (- (aref a-center 1) (aref b-center 1)))
         )
