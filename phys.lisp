@@ -138,8 +138,8 @@
               l (sqrt (+ (* rad rad) (* hh hh)))
               dny (* l (cadr dn))
               n (conds
-                (>= dny hh) (vector 0 -1 0)
-                (<= dny (- hh)) (vector 0 1 0)
+                (>= dny hh) (list 0 -1 0)
+                (<= dny (- hh)) (list 0 1 0)
                 t (-> dxz l- norm)
               )
             )
@@ -226,7 +226,7 @@
 )
 
 (defun char-bounds (radius height center)
-  (lets (h (vector radius (/ height 2) radius))
+  (lets (h (list radius (/ height 2) radius))
     (list
       (l- center h)
       (l+ center h)
@@ -389,7 +389,7 @@
           dy (cadr d)
         )
         (conds
-          (zerop (len dxz)) (l+ center (vector 0 (closest dy (- hh) hh) 0))
+          (zerop (len dxz)) (l+ center (list 0 (closest dy (- hh) hh) 0))
           (and (<= dy (- hh radius)) (<= (+ (- hh) radius) dy)) (l+
             center
             (l* (norm dxz) (lll radius))
