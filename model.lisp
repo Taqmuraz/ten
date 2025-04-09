@@ -30,8 +30,8 @@
       )
       (load-submesh (m)
         (make-assoc
-          :verts (map 'vector (sfun v select-keys v 0 2 1) (ai:vertices m))
-          :normals (map 'vector (sfun v select-keys v 0 2 1) (ai:normals m))
+          :verts (map 'vector (sfun v with-vector-items (x y z) v (list x z y)) (ai:vertices m))
+          :normals (map 'vector (sfun v with-vector-items (x y z) v (list x z y)) (ai:normals m))
           :uvs (-> m ai:texture-coords (map-key 0))
           :faces (-> m ai:faces triangulate)
           :material (ai:material-index m)
@@ -271,7 +271,7 @@
         (loop for i from 0 below (length src)
           for e = (aref src i)
           do (loop for j from 0 below dim
-            do (setf (gl:glaref dst (+ j (* i dim))) (aref e j))
+            do (setf (gl:glaref dst (+ j (* i dim))) (elt e j))
           )
         )
       )
@@ -496,7 +496,7 @@
 )
 
 (defun display-gl-group-instanced (group shaders instances &key (proj (mat-identity 4))
-                                                                (light #(0 -1 0)))
+                                                                (light (list 0 -1 0)))
   (with-map-keys (meshes (tpose :pose) shader-groups anim-bones anims-buffer) group
     (lets (
         buffers (alloc-instancing-buffers)

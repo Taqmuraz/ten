@@ -13,7 +13,7 @@
         )
       )
       level-data (-> "res/arena/arena.fbx" load-model-data)
-      player-poses (loop for i from 0 below 100 collect (vector (floor i 10) 0 (mod i 10)))
+      player-poses (loop for i from 0 below 100 collect (list (floor i 10) 0 (mod i 10)))
       level-model (-> level-data load-model-to-gl load-gl-group)
       player-model (-> "res/chars/archer_anims.fbx" load-model-data load-model-to-gl load-gl-group)
       player-anims (-> player-model :anims vals into-vector)
@@ -36,22 +36,22 @@
   )
   (defun demo-game-player (pos)
     (make-assoc
-      :look (vector 0 0 1)
+      :look (list 0 0 1)
       :anim 0
-      :shape (char-shape 1/2 player-height (v+ pos (vector 0 player-height/2 0)))
+      :shape (char-shape 1/2 player-height (l+ pos (list 0 player-height/2 0)))
     )
   )
   (defun player-pos (player)
-    (-> player :shape :center (v- (vector 0 player-height/2 0)))
+    (-> player :shape :center (l- (list 0 player-height/2 0)))
   )
 )
 
 (defun move-player (player mov)
   (update player
     (sfun s update s
-      (sfun v with-vector-items (vx vy vz) v
-        (with-vector-items (mx my mz) mov
-          (vector mx my mz)
+      (sfun v with-items (vx vy vz) v
+        (with-items (mx my mz) mov
+          (list mx my mz)
         )
       )
       :velocity
@@ -66,7 +66,7 @@
       no-move (-> mov len zerop)
       look (if no-move (-> player :look) mov)
       anim (if no-move 0 1)
-      player (move-player player (v* mov (vvv 3)))
+      player (move-player player (l* mov (lll 3)))
     )
     (with-vals player
       :anim anim
@@ -76,7 +76,7 @@
 )
 
 (defun non-player-next (player time delta-time)
-  (move-player player #(0 0 0))
+  (move-player player (list 0 0 0))
 )
 
 (defun demo-game-setup ()
@@ -88,8 +88,8 @@
     (make-assoc
       :res res
       :state (make-assoc
-        :campos (v+ (car player-poses) (vector 1 2 4))
-        :camrot (vector 0 pi 0)
+        :campos (l+ (car player-poses) (list 1 2 4))
+        :camrot (list 0 pi 0)
         :player (car players)
         :non-players (cdr players)
       )
@@ -107,9 +107,9 @@
     )
     (lets (
         arrows (arrows-camrot)
-        camrot (v+ (v* arrows (vvv* dt pi 1/2)) camrot)
-        camdir (transform-vector (xyz->rotation camrot) #(0 0 1))
-        cammat (mat-rotation-y (aref camrot 1))
+        camrot (l+ (l* arrows (lll* dt pi 1/2)) camrot)
+        camdir (transform-vector (xyz->rotation camrot) (list 0 0 1))
+        cammat (mat-rotation-y (elt camrot 1))
         players (cons player non-players)
         shapes (append (map-by-key 'list :shape players) level-shapes)
         shapes (shapes-fixed-cycle shapes dt)
@@ -122,7 +122,7 @@
       (with-vals state
         :player player
         :non-players non-players
-        :campos (v+ (player-pos player) #(0 2 0) (v* camdir (vvv -4)))
+        :campos (l+ (player-pos player) (list 0 2 0) (l* camdir (lll -4)))
         :camrot camrot
       )
     )

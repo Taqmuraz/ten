@@ -20,7 +20,7 @@
             s (get-time)
           )
           (loop repeat ,cycles do ,@body)
-          (format t "Finished ~A for ~A cycles, took ~,1f sec~%" ,tag ,cycles (- (get-time) s))
+          (format t "Finished ~A for ~A cycles, took ~A ms~%" ,tag ,cycles (floor (* 1000 (- (get-time) s))))
         )
       )
     )
@@ -32,13 +32,13 @@
         (-> m load-model-data model-mesh-shapes)
       )
       ss (perf "sphere-shape x20"
-        (loop for i from 0 below 100 collect (char-shape 1/2 2 (vector (floor i 10) 0 (mod i 10))))
+        (loop for i from 0 below 100 collect (char-shape 1/2 2 (list (floor i 10) 0 (mod i 10))))
       )
       as (append ss ms)
       dt 1/50
       st (shapes-tree as)
       cs (shapes-tree-contacts st)
-      c 200
+      c 20
     )
     (perf "total"
       (perfc c "process-forces" (process-forces as dt))

@@ -81,7 +81,7 @@
 )
 
 (def-uniform :float (gl:uniformf loc value))
-(def-uniform :vec (gl:uniformfv loc value))
+(def-uniform :vec (gl:uniformfv loc (coerce value 'vector)))
 
 (def-uniform :vec-4-array
   (with-uniform-buffer (ptr len :float 'single-float (concat 'vector value))

@@ -5,7 +5,7 @@
 
 (defun sphere-vs-sphere (a-rad a-center b-rad b-center)
   (lets (
-      d (v- a-center b-center)
+      d (l- a-center b-center)
       l (len d)
       dist (- l (+ a-rad b-rad))
     )
@@ -13,9 +13,9 @@
       (lets (
           dir (norm d)
           an dir
-          bn (v- dir)
-          ap (-> bn (v* (vvv a-rad)) (v+ a-center))
-          bp (-> an (v* (vvv b-rad)) (v+ b-center))
+          bn (l- dir)
+          ap (-> bn (l* (lll a-rad)) (l+ a-center))
+          bp (-> an (l* (lll b-rad)) (l+ b-center))
         )
         (make-assoc
           :point-a bp
@@ -34,10 +34,10 @@
         (lets (
             x (car mat)
             y (cadr mat)
-            a (aref x 0)
-            b (aref y 0)
-            c (aref x 1)
-            d (aref y 1)
+            a (car x)
+            b (car y)
+            c (cadr x)
+            d (cadr y)
             det (/ (- (* a d) (* b c)))
             a (* a det)
             b (* b det)
@@ -45,49 +45,51 @@
             d (* d det)
           )
           (list
-            (vector d (- c))
-            (vector (- b) a)
+            (list d (- c))
+            (list (- b) a)
           )
         )
       )
       (mat*vec (mat vec)
-        (mv2+
-          (mv2* (vv (aref vec 0)) (car mat))
-          (mv2* (vv (aref vec 1)) (cadr mat))
+        (ml2+
+          (ml2* (ll (car vec)) (car mat))
+          (ml2* (ll (cadr vec)) (cadr mat))
         )
       )
       (clamp (x min max) (min max (max min x)))
       (on-plane (p o x y)
-        (lets (d (mv3- p o))
-          (vector (mdotv3 d x) (mdotv3 d y))
+        (lets (d (ml3- p o))
+          (list (mdotl3 d x) (mdotl3 d y))
         )
       )
       (subcut (p a b c)
         (lets (
-            mat (list (mv2- a b) (mv2- c b))
+            mat (list (ml2- a b) (ml2- c b))
             inv (inverse mat)
-            ip (mat*vec inv (mv2- p b))
-            ix (clamp (aref ip 0) 0 1)
-            iy (clamp (aref ip 1) 0 1)
-            r (mat*vec mat (vector ix iy))
+            ip (mat*vec inv (ml2- p b))
+            ix (clamp (car ip) 0 1)
+            iy (clamp (cadr ip) 0 1)
+            r (mat*vec mat (list ix iy))
           )
-          (mv2+ b r)
+          (ml2+ b r)
         )
       )
       (cut (p a b c)
         (lets (
-            x (mnormv3 (mv3- a b))
+            x (mnorml3 (ml3- a b))
             y (cross x normal)
             pp (on-plane p b x y)
             ap (on-plane a b x y)
-            bp #(0 0)
+            bp (ll 0)
             cp (on-plane c b x y)
             op (-> pp (subcut ap bp cp) (subcut bp cp ap))
           )
-          (v+
-            b
-            (mv3* x (vvv (aref op 0)))
-            (mv3* y (vvv (aref op 1)))
+          (with-items (ox oy) op
+            (l+
+              b
+              (ml3*n x ox)
+              (ml3*n y oy)
+            )
           )
         )
       )
@@ -99,13 +101,13 @@
 (defun sphere-vs-triangle (rad center points normal)
   (with-items (a b c) points
     (lets (
-        rel (v- center b)
+        rel (l- center b)
         rd (dot normal rel)
       )
       (when (<= 0 rd)
         (lets (
             p (triangle-closest-point center a b c normal)
-            n (v- center p)
+            n (l- center p)
             dst (- (len n) rad)
           )
           (when (<= dst 0)
@@ -122,23 +124,23 @@
 
 (defun char-vs-triangle (rad height center points normal)
   (with-items (a b c) points
-    (when (-> center (mv3- b) (mdotv3 normal) (>= 0))
+    (when (-> center (ml3- b) (mdotl3 normal) (>= 0))
       (lets (
           p (triangle-closest-point center a b c normal)
-          d (mv3- p center)
-          dh (abs (aref d 1))
+          d (ml3- p center)
+          dh (abs (cadr d))
           hh (/ height 2)
           dxz (xyz->x0z d)
         )
-        (when (and (<= dh hh) (<= (mlenv3 dxz) rad))
+        (when (and (<= dh hh) (<= (mlenl3 dxz) rad))
           (lets (
-              dn (mnormv3 d)
+              dn (mnorml3 d)
               l (sqrt (+ (* rad rad) (* hh hh)))
-              dny (* l (aref dn 1))
+              dny (* l (cadr dn))
               n (conds
                 (>= dny hh) (vector 0 -1 0)
                 (<= dny (- hh)) (vector 0 1 0)
-                t (-> dxz v- norm)
+                t (-> dxz l- norm)
               )
             )
             (make-assoc
@@ -219,15 +221,15 @@
     :radius radius
     :height height
     :center center
-    :velocity (vvv 0)
+    :velocity (lll 0)
   )
 )
 
 (defun char-bounds (radius height center)
   (lets (h (vector radius (/ height 2) radius))
     (list
-      (v- center h)
-      (v+ center h)
+      (l- center h)
+      (l+ center h)
     )
   )
 )
@@ -236,20 +238,20 @@
   (with-map-keys ((a-rad :radius) (a-height :height) (a-center :center)) a
     (with-map-keys ((b-rad :radius) (b-height :height) (b-center :center)) b
       (lets (
-          dh (abs (- (aref a-center 1) (aref b-center 1)))
+          dh (abs (- (cadr a-center) (cadr b-center)))
         )
         (when (<= dh (/ (+ a-height b-height) 2))
           (lets (
-              d (xyz->x0z (mv3- a-center b-center))
-              dst (- (mlenv3 d) (+ a-rad b-rad))
+              d (xyz->x0z (ml3- a-center b-center))
+              dst (- (mlenl3 d) (+ a-rad b-rad))
             )
             (when (<= dst 0)
               (lets (
-                  n (mnormv3 d)
-                  an (uvec vector - n)
+                  n (mnorml3 d)
+                  an (ulst - n)
                   bn n
-                  ap (mv3+ a-center (mv3* an (vvv a-rad)))
-                  bp (mv3+ b-center (mv3* bn (vvv b-rad)))
+                  ap (ml3+ a-center (ml3* an (lll a-rad)))
+                  bp (ml3+ b-center (ml3* bn (lll b-rad)))
                 )
                 (make-assoc
                   :point-a bp
@@ -268,31 +270,31 @@
 
 (defun cover-with-bounds (bounds p)
   (destructuring-bind (min max) bounds
-    (list (vmin min p) (vmax max p))
+    (list (lmin min p) (lmax max p))
   )
 )
 
 (defun clamp-with-bounds (bounds p)
-  (with-items (min max) bounds (vmax min (vmin max p)))
+  (with-items (min max) bounds (lmax min (lmin max p)))
 )
 
 (defun triangle-bounds (a b c)
   (list
-    (bvec vector + (vvv *-eps*) (bvec vector min (bvec vector min a b) c))
-    (bvec vector + (vvv *eps*)  (bvec vector max (bvec vector max a b) c))
+    (blst + (lll *-eps*) (blst min (blst min a b) c))
+    (blst + (lll *eps*)  (blst max (blst max a b) c))
   )
 )
 
 (defun combine-bounds (a b &rest others)
-  (apply #'mapcar #'funcall (list #'vmin #'vmax) a b others)
+  (apply #'mapcar #'funcall (list #'lmin #'lmax) a b others)
 )
 
 (defun bounds* (a b)
-  (mapcar #'v* a b)
+  (mapcar #'l* a b)
 )
 
 (defun bounds-from-min-size (min size)
-  (list min (v+ min size))
+  (list min (l+ min size))
 )
 
 (defun bounds-volume (b)
@@ -303,8 +305,8 @@
 
 (defun bounds-intersectp (a b)
   (macrolet (
-      (bv (op x y) `(bvec vector ,op ,x ,y))
-      (iv (op v) `(invec vector ,op ,v))
+      (bv (op x y) `(blst ,op ,x ,y))
+      (iv (op v) `(inlst ,op ,v))
     )
     (with-items (amin amax) a
       (with-items (bmin bmax) b
@@ -320,7 +322,7 @@
 )
 
 (defun sphere-bounds (rad center)
-  (list (mv3- center (vvv rad)) (mv3+ center (vvv rad)))
+  (list (ml3- center (lll rad)) (ml3+ center (lll rad)))
 )
 
 (defun sphere-shape (rad center)
@@ -328,7 +330,7 @@
     :kind :sphere
     :radius rad
     :center center
-    :velocity (vvv 0)
+    :velocity (lll 0)
   )
 )
 
@@ -345,10 +347,10 @@
   (cases (-> shape :kind)
     :sphere (with-map-keys (radius center) shape
       (lets (
-          d (v- point center)
+          d (l- point center)
         )
         (if (<= radius (len d))
-          (v+ center (v* (vvv radius) (norm d)))
+          (l+ center (l* (lll radius) (norm d)))
           point
         )
       )
@@ -356,16 +358,16 @@
     :char (with-map-keys (radius height center) shape
       (lets (
           hh (/ height 2)
-          d (v- point center)
+          d (l- point center)
           dxz (xyz->x0z d)
-          dy (aref d 1)
+          dy (cadr d)
         )
         (if (and (<= (len dxz) radius) (<= (- hh) dy hh))
           point
-          (v+
+          (l+
             center
             (clamp-length dxz radius)
-            (vector 0 (max (- hh) (min hh dy)) 0)
+            (list 0 (max (- hh) (min hh dy)) 0)
           )
         )
       )
@@ -377,26 +379,26 @@
 (defun closest-point-on-shape (shape point)
   (cases (-> shape :kind)
     :sphere (with-map-keys (radius center) shape
-      (v+ center (v* (vvv radius) (norm (v- point center))))
+      (l+ center (l* (lll radius) (norm (l- point center))))
     )
     :char (with-map-keys (radius height center) shape
       (lets (
           hh (/ height 2)
-          d (v- point center)
+          d (l- point center)
           dxz (xyz->x0z d)
-          dy (aref d 1)
+          dy (cadr d)
         )
         (conds
-          (zerop (len dxz)) (v+ center (vector 0 (closest dy (- hh) hh) 0))
-          (and (<= dy (- hh radius)) (<= (+ (- hh) radius) dy)) (v+
+          (zerop (len dxz)) (l+ center (vector 0 (closest dy (- hh) hh) 0))
+          (and (<= dy (- hh radius)) (<= (+ (- hh) radius) dy)) (l+
             center
-            (v* (norm dxz) (vvv radius))
-            (vector 0 dy 0)
+            (l* (norm dxz) (lll radius))
+            (list 0 dy 0)
           )
-          t (v+
+          t (l+
             center
             (clamp-length dxz radius)
-            (vector 0 (closest dy (- hh) hh) 0)
+            (list 0 (closest dy (- hh) hh) 0)
           )
         )
       )
@@ -409,10 +411,10 @@
   (with-map-keys (faces verts) mesh
     (lets (
         tris (map 'list (sfun f map 'list (sfun e transform-point transform (aref verts e)) f) faces)
-        bounds (if tris (applyv #'triangle-bounds (car tris)) (-> 0 vvv vvv))
+        bounds (if tris (applyv #'triangle-bounds (car tris)) (-> 0 lll ll))
         tris (mapcar
           (sfun e with-items (a b c) e
-            (list e (norm (cross (v- a b) (v- c b))) (triangle-bounds a b c))
+            (list e (norm (cross (l- a b) (l- c b))) (triangle-bounds a b c))
           )
           tris
         )
@@ -476,7 +478,7 @@
               (lets (
                   min (car bounds)
                   max (cadr bounds)
-                  diff (v- max min)
+                  diff (l- max min)
                   cuts (loop for offset in
                     '(
                       (0 0 0)
@@ -489,8 +491,8 @@
                       (0 1 1)
                     )
                     collect (bounds-from-min-size
-                      (v+ min (v* diff offset (vvv 1/2)))
-                      (v* diff (vvv 1/2))
+                      (l+ min (l* diff offset (lll 1/2)))
+                      (l* diff (lll 1/2))
                     )
                   )
                 )
@@ -542,14 +544,14 @@
               (make-assoc
                 :point-a point
                 :point-b point
-                :normal-a (v- normal)
+                :normal-a (l- normal)
                 :normal-b normal
               )
               (make-assoc
                 :point-a point
                 :point-b point
                 :normal-a normal
-                :normal-b (v- normal)
+                :normal-b (l- normal)
               )
             )
           )
@@ -621,18 +623,18 @@
           (lets (
               center (-> shape :center)
               radius (-> shape :radius)
-              point-to-in (len (v- point (closest-point-in-shape shape point)))
-              point-to-on (len (v- point (closest-point-on-shape shape point)))
+              point-to-in (len (l- point (closest-point-in-shape shape point)))
+              point-to-on (len (l- point (closest-point-on-shape shape point)))
               static-contact (cases other-kind :mesh t)
             )
             (if (or (not static-contact) (zerop point-to-in))
               (lets (
                   mult (if static-contact 1 1/2)
-                  n (v* normal (vvv* mult point-to-on))
-                  center (v+ center n)
+                  n (l* normal (lll* mult point-to-on))
+                  center (l+ center n)
                   vel (-> shape :velocity)
                   vd (dot vel normal)
-                  vel (if (< vd 0) (v- vel (v* normal (vvv vd))) vel)
+                  vel (if (< vd 0) (l- vel (l* normal (lll vd))) vel)
                   bounds (sphere-bounds (-> shape :radius) center)
                 )
                 (with-vals shape
@@ -673,16 +675,16 @@
   (process-shapes-tree-contacts shapes-tree (shapes-tree-contacts shapes-tree) delta-time)
 )
 
-(defun process-forces (shapes delta-time &key (gravity #(0 -9.8 0)))
+(defun process-forces (shapes delta-time &key (gravity (list 0 -9.8 0)))
   (lets (
-      dg (v* gravity (vvv delta-time))
+      dg (l* gravity (lll delta-time))
     )
     (labels (
         (process-sphere (shape)
           (with-map-keys (velocity center) shape
             (with-vals shape
-              :velocity (v+ velocity dg)
-              :center (v+ center (v* velocity (vvv delta-time)))
+              :velocity (l+ velocity dg)
+              :center (l+ center (l* velocity (lll delta-time)))
             )
           )
         )
