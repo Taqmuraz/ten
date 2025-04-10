@@ -22,7 +22,7 @@
 (defun demo-instancing-setup (file count)
   (make-assoc
     :res (demo-instancing-res file)
-    :state (make-assoc :count count :campos (vector 0 0 -5))
+    :state (make-assoc :count count :campos (list 0 0 -5))
     :next 'demo-instancing-next
     :display 'demo-instancing-display
   )
@@ -30,7 +30,7 @@
 
 (defun demo-instancing-next (dev res state)
   (with-map-keys ((dt :delta-time)) dev
-    (update state (sfun c -> (wasd-xyz) (l* (lll (* 10 dt))) (v+ c)) :campos)
+    (update state (sfun c -> (wasd-xyz) (l* (lll (* 10 dt))) (l+ c)) :campos)
   )
 )
 
@@ -39,8 +39,11 @@
                    ((campos count) state)
                    (((w :width) (h :height) time) dev))
     (lets (
-        proj-mat (mat-perspective (/ w h) (/ pi 3) 1 1000)
-        mat-stack (last-> campos v- (applyv #'mat-translation) list)
+        proj-mat (mul-mat-4x4
+          (mat-perspective (/ w h) (/ pi 3) 1 1000)
+          (apply #'mat-translation (l- campos))
+        )
+        mat-stack (-> 4 mat-identity list)
         rot-mat (mat-rotation 0 pi 0)
         instances (with-stack-push mat-stack rot-mat
           (loop for i from 0 below count collect
