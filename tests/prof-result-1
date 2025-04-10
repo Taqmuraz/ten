@@ -1,0 +1,105 @@
+  seconds  |     gc     |    consed   |   calls   |  sec/call  |  name  
+-------------------------------------------------------------
+     0.349 |      0.002 | 190,179,184 |   569,222 |   0.000001 | BOUNDS-INTERSECTP
+     0.078 |      0.000 |   8,936,768 |   112,590 |   0.000001 | CHAR-VS-CHAR
+     0.078 |      0.000 |           0 | 2,954,713 |   0.000000 | MAP-KEY
+     0.077 |      0.002 |  78,874,768 |    22,680 |   0.000003 | TRIANGLE-CLOSEST-POINT
+     0.047 |      0.000 |           0 |   536,220 |   0.000000 | HAS-KEY-P
+     0.030 |      0.000 |  34,948,416 |    75,806 |   0.000000 | MAKE-HASH
+     0.026 |      0.000 |  13,559,328 |    53,846 |   0.000000 | WITH-VALS
+     0.024 |      0.000 |   8,974,656 |    79,464 |   0.000000 | L*
+     0.022 |      0.002 |  21,470,880 |   134,884 |   0.000000 | L+
+     0.021 |      0.000 |   3,142,544 |    28,800 |   0.000001 | SPHERE-BOUNDS
+     0.019 |      0.002 |  21,917,104 |   145,898 |   0.000000 | L-
+     0.014 |      0.002 |  21,285,184 |    11,745 |   0.000001 | ALL-POSSIBLE-PAIRS
+     0.008 |      0.000 |           0 |   144,402 |   0.000000 | LEN
+     0.007 |      0.000 |      98,304 |   173,202 |   0.000000 | DOT
+     0.006 |      0.000 |   1,833,344 |    28,780 |   0.000000 | CHAR-BOUNDS
+     0.005 |      0.000 |           0 |    28,800 |   0.000000 | LLL*
+     0.004 |      0.000 |   8,740,336 |   192,870 |   0.000000 | XYZ->X0Z
+     0.004 |      0.000 |   3,797,296 |    23,082 |   0.000000 | CROSS
+     0.003 |      0.000 |   5,109,312 |    23,753 |   0.000000 | MAKE-ASSOC
+     0.003 |      0.000 |     622,304 |         1 |   0.002971 | LOAD-MODEL-DATA
+     0.003 |      0.000 |  13,941,776 |   167,140 |   0.000000 | LLL
+     0.003 |      0.000 |   1,408,336 |    53,846 |   0.000000 | HASH->ASSOC
+     0.001 |      0.000 |     753,456 |     1,206 |   0.000001 | TRANSFORM-POINT
+     0.001 |      0.000 |     130,960 |     8,912 |   0.000000 | BOUNDS-FROM-MIN-SIZE
+     0.001 |      0.000 |     425,776 |       408 |   0.000002 | TRIANGLE-BOUNDS
+     0.001 |      0.000 |     360,272 |       469 |   0.000001 | LMIN
+     0.001 |      0.000 |     360,272 |       469 |   0.000001 | LMAX
+     0.001 |      0.000 |     294,768 |       469 |   0.000001 | COMBINE-BOUNDS
+     0.000 |      0.000 |           0 |        67 |   0.000004 | INTO-VECTOR
+     0.000 |      0.000 |           0 |       100 |   0.000002 | CHAR-SHAPE
+     0.000 |      0.000 |           0 |         3 |   0.000053 | FILE-PARENT
+     0.000 |      0.000 |     229,264 |        67 |   0.000002 | LIST-RANGE
+     0.000 |      0.000 |           0 |        20 |   0.000003 | GET-TIME
+     0.000 |      0.000 |           0 |         6 |   0.000005 | CONNECT
+     0.000 |      0.000 |      65,040 |         6 |   0.000004 | TRIANGULATE
+     0.000 |      0.000 |           0 |         6 |   0.000003 | KEYS
+     0.000 |      0.000 |           0 |         9 |   0.000002 | MUL-MAT-4X4
+     0.000 |      0.000 |           0 |         6 |   0.000002 | MERGE-INTO
+     0.000 |      0.000 |           0 |         1 |   0.000008 | UPDATE
+     0.000 |      0.000 |           0 |         2 |   0.000004 | TRANSPONED
+     0.000 |      0.000 |           0 |         6 |   0.000001 | HASH->VECTOR
+     0.000 |      0.000 |           0 |         1 |   0.000005 | MAT-ROTATION-Z
+     0.000 |      0.000 |           0 |         2 |   0.000002 | KEYWORD-OF
+     0.000 |      0.000 |           0 |         1 |   0.000001 | MAT-ROTATION-X
+     0.000 |      0.000 |           0 |         1 |   0.000001 | MAT-IDENTITY
+     0.000 |      0.000 |           0 |         2 |   0.000000 | INTO-STRING
+     0.000 |      0.000 |           0 |         2 |   0.000000 | MAT-FROM-GL
+     0.000 |      0.000 |           0 |         3 |   0.000000 | CONCAT-PATH
+     0.000 |      0.000 |           0 |         1 |   0.000000 | MAT-ROTATION
+     0.000 |      0.000 |           0 |         3 |   0.000000 | MUL-MATS-4X4
+     0.000 |      0.000 |   6,156,000 |   204,120 |   0.000000 | LL
+     0.000 |      0.000 |           0 |         1 |   0.000000 | HASH-SET
+     0.000 |      0.000 |           0 |         1 |   0.000000 | MAT-ROTATION-Y
+     0.000 |      0.000 |     524,048 |    29,202 |   0.000000 | NORM
+     0.000 |      0.000 |           0 |        61 |   0.000000 | SHAPES-TREE
+     0.000 |      0.000 |   2,390,896 |        67 |   0.000000 | GENERIC-TREE
+     0.000 |      0.000 |  48,211,408 |        81 |   0.000000 | SHAPES-TREE-CONTACTS
+     0.000 |      0.002 |  21,915,008 |   103,680 |   0.000000 | CHAR-VS-TRIANGLE
+     0.000 |      0.000 |           0 |    29,146 |   0.000000 | SHAPE-BOUNDS
+     0.000 |      0.000 |   4,027,408 |   135,918 |   0.000000 | SHAPES-CONTACTS
+     0.000 |      0.000 |           0 |    28,800 |   0.000000 | CLOSEST-POINT-IN-SHAPE
+     0.000 |      0.000 |           0 |         6 |   0.000000 | TRIANGLES-TREE
+     0.000 |      0.000 |   6,524,800 |    21,870 |   0.000000 | CHAR-VS-MESH
+     0.000 |      0.000 |           0 |        40 |   0.000000 | PROCESS-FORCES
+     0.000 |      0.000 |     196,512 |        80 |   0.000000 | PROCESS-SHAPES-TREE-CONTACTS
+     0.000 |      0.000 |   4,647,888 |    28,800 |   0.000000 | CLOSEST-POINT-ON-SHAPE
+     0.000 |      0.000 |           0 |         1 |   0.000000 | MODEL-MESH-SHAPES
+     0.000 |      0.000 |           0 |        60 |   0.000000 | SHAPES-TREE-SIM
+     0.000 |      0.000 |           0 |         6 |   0.000000 | MESH-SHAPE
+     0.000 |      0.000 |           0 |    22,680 |   0.000000 | SHAPE-VS-MESH
+-------------------------------------------------------------
+     0.837 |      0.012 | 536,053,616 | 6,178,612 |            | Total
+
+estimated total profiling overhead: 12.97 seconds
+overhead estimation parameters:
+  1.7766e-8s/call, 2.098622e-6s total profiling, 1.0175901e-6s internal profiling
+
+These functions were not called:
+ ALLOC-INSTANCING-BUFFERS ANIM-TO-GL ANIMATE ANIMS-TO-GL-BUFFER ARROWS-CAMROT
+ ARROWS-XY0 ASSOC->HASH ASSOC->TREE ASSOC-ACCESSOR AT-LEAST-ONE
+ BIND-INSTANCING-BUFFER BONES-TO-GL-BUFFER BOUNDS* BOUNDS-VOLUME CACHE-ANIM
+ CLAMP-LENGTH CLAMP-WITH-BOUNDS CLOCK->XY CLOSEST COLLECT-GL-INSTANCES COMP
+ CONCAT COPY-HASH COVER-WITH-BOUNDS CYCLED DEBUG-LEVEL-SHAPES DEMO-GAME-DISPLAY
+ DEMO-GAME-NEXT DEMO-GAME-PLAYER DEMO-GAME-RES DEMO-GAME-SETUP
+ DEMO-INSTANCING-DISPLAY DEMO-INSTANCING-NEXT DEMO-INSTANCING-RES
+ DEMO-INSTANCING-SETUP DISPLAY-GL-GROUP DISPLAY-GL-GROUP-INSTANCED FIND-BOUNDS
+ FORCE FPS FUNC->HASH GROUP-BY GROUP-GL-INSTANCES HASH->FUNC HASH-ACCESSOR
+ INTO-LIST ITERATE-FUTURES KEY-STATE L/ LIST-FROM-TO LL* LLLL LLLL*
+ LOAD-BLANK-TEXTURE LOAD-GL-GROUP LOAD-INSTANCING-BUFFER LOAD-MODEL-TO-GL
+ LOAD-SHADER-TO-GL LOAD-TEXTURE-TO-GL LOAD-UNIFORM-FLOAT LOAD-UNIFORM-MAT
+ LOAD-UNIFORM-MAT-VEC-16 LOAD-UNIFORM-MATS LOAD-UNIFORM-MATS-VEC-16
+ LOAD-UNIFORM-VEC LOAD-UNIFORM-VEC-4-ARRAY LOOK->ROTATION MAKE-SET MAKE-TREE
+ MAP-BY-KEY MAP-PAIRS MAT-4X4->VEC-16 MAT-PERSPECTIVE MAT-POS-ROT
+ MAT-POS-ROT-INVERSED MAT-SCALE-4X4 MAT-TO-GL MAT-TRANSLATION MOVE-PLAYER
+ MUL-MAT MUL-MATS NON-PLAYER-NEXT PART PLAYER-NEXT PLAYER-POS POSE-TO-GL
+ PREPEND-CONST PREPEND-CONSTS REPEAT SEARCH-TREE SELECT-KEYS SELECT-TIMEOUT
+ SELECT-VALS SETUP SETUP-FUNC SHAPES-FIXED-CYCLE SKIP SPHERE-SHAPE
+ SPHERE-VS-MESH SPHERE-VS-SPHERE SPHERE-VS-TRIANGLE STACK-PUSH-MATRIX
+ START-DEMO-GAME START-DEMO-INSTANCING SYMBOL-OF TAKE THREAD-POOL-SIZE TOUCH
+ TRANSFORM-VECTOR TRANSPONED-4X4 TREE-CONTENT TREE-HEIGHT TREE-L TREE-MAX
+ TREE-MIN TREE-R TREE-ROOT UPDATE-KEYS UPDATE-VALS VALS VEC-16->MAT-4X4
+ VECTOR->HASH VECTOR-FROM-TO VECTOR-RANGE WASD-X0Z WASD-XYZ XY->CLOCK
+ XYZ->ROTATION XYZ->TRANSLATION

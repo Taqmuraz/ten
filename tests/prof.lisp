@@ -17,7 +17,7 @@
     (print ss)
     `(progn
       (sb-profile:profile ,@ss)
-      (start-demo-game)
+      (load "tests/perf-test")
       (sb-profile:report)
     )
   )

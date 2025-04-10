@@ -305,8 +305,8 @@
 
 (defun bounds-intersectp (a b)
   (macrolet (
-      (bv (op x y) `(blst ,op ,x ,y))
-      (iv (op v) `(inlst ,op ,v))
+      (bv (op x y) `(blst3 ,op ,x ,y))
+      (iv (op v) `(inlst3 ,op ,v))
     )
     (with-items (amin amax) a
       (with-items (bmin bmax) b
