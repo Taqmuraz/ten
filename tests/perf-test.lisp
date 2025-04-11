@@ -27,7 +27,7 @@
   )
   (format t "~%")
   (lets (
-      m "res/arena/arena.fbx"
+      m "res/castle/castle_desert.fbx"
       ms (perf "load-model-data + model-mesh-shapes"
         (-> m load-model-data model-mesh-shapes)
       )

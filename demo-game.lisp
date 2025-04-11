@@ -62,7 +62,7 @@
 
 (defun player-next (player cammat time delta-time)
   (lets (
-      mov (last-> (wasd-x0z) norm (transform-vector cammat))
+      mov (last-> (wasd-xyz) norm (transform-vector cammat))
       no-move (-> mov len zerop)
       look (if no-move (-> player :look) mov)
       anim (if no-move 0 1)
@@ -129,43 +129,37 @@
   )
 )
 
-(defun debug-level-shapes (player level-shapes proj)
+(defun debug-level-shapes (players level-shapes proj)
   (gl:matrix-mode :projection)
   (gl:load-identity)
   (-> proj mat-4x4->vec-16 gl:mult-matrix)
   (gl:matrix-mode :modelview)
   (gl:load-identity)
-  (with-map-keys (radius height center) (-> player :shape)
-    (gl:with-pushed-matrix
-      (applyv #'gl:translate center)
-      (gl:scale (* radius 2) height (* radius 2))
-      (gl:color 1 0 0 1)
-      (glut:wire-cube 1)
+  (gl:color 0 1 0 1)
+  (lets (
+      ss (map-by-key 'list :shape players)
+      shapes-tree (shapes-tree (append ss level-shapes))
     )
-  )
-  (gl:with-primitives :lines
-    (with-maps-keys (((shape) player)
-                     ((radius center) shape)
-                     (((bounds shape)) #'shape-bounds))
-      (loop for s in level-shapes do
-        (when (bounds-intersectp (shape-bounds s) bounds)
-          (loop for f in (-> s :triangles) do
-            (gl:color 0 1 0 1)
-            (with-items (a b c) (car f)
-              (labels (
-                  (line (a b)
-                    (applyv #'gl:vertex a)
-                    (applyv #'gl:vertex b)
-                  )
+    (labels (
+        (walk-tree (tree)
+          (with-map-keys (bounds children) tree
+            (with-items (min max) bounds
+              (lets (
+                  center (l* (l+ min max) (lll 1/2))
+                  size (l- max min)
                 )
-                (line a b)
-                (line a c)
-                (line b c)
+                (gl:with-pushed-matrix
+                  (apply #'gl:translate center)
+                  (apply #'gl:scale size)
+                  (glut:wire-cube 1)
+                )
               )
             )
+            (mapc #'walk-tree children)
           )
         )
       )
+      (-> shapes-tree :tree walk-tree)
     )
   )
 )
@@ -190,7 +184,7 @@
             )
             (with-stack-push mat-stack
               (mul-mat-4x4
-                (applyv 'mat-translation pos)
+                (apply 'mat-translation pos)
                 (-> look look->rotation xyz->rotation)
               )
               (make-assoc
@@ -211,7 +205,7 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
-      ;; (debug-level-shapes player (-> res :level-shapes) proj-mat)
+      (debug-level-shapes players (-> res :level-shapes) proj-mat)
     )
   )
 )

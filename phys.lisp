@@ -411,7 +411,7 @@
   (with-map-keys (faces verts) mesh
     (lets (
         tris (map 'list (sfun f map 'list (sfun e transform-point transform (aref verts e)) f) faces)
-        bounds (if tris (applyv #'triangle-bounds (car tris)) (-> 0 lll ll))
+        bounds (if tris (apply #'triangle-bounds (car tris)) (-> 0 lll ll))
         tris (mapcar
           (sfun e with-items (a b c) e
             (list e (norm (cross (l- a b) (l- c b))) (triangle-bounds a b c))
