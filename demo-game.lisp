@@ -205,7 +205,7 @@
         instances
         :proj proj-mat)
       (display-gl-group level-model shaders :root (car mat-stack) :proj proj-mat)
-      (debug-level-shapes players (-> res :level-shapes) proj-mat)
+      ;;(debug-level-shapes players (-> res :level-shapes) proj-mat)
     )
   )
 )
