@@ -452,7 +452,7 @@
   )
 )
 
-(defun generic-tree (items &key items-key item-bounds item-with-id item-id (cap 10) (max-depth 2))
+(defun generic-tree (items &key items-key item-bounds item-with-id item-id (subnode-test #'identity) (cap 10) (max-depth 2))
   (labels (
       (give-items-id (items)
         (mapcar item-with-id items (-> items length list-range))
@@ -498,7 +498,9 @@
                 )
                 (loop for cut in cuts
                   for ss = (remove-if-not (sfun s bounds-intersectp (funcall item-bounds s) cut) items)
-                  collect (walk-tree ss :bounds cut :depth (+ 1 depth))
+                  append (when (funcall subnode-test ss)
+                    (list (walk-tree ss :bounds cut :depth (+ 1 depth)))
+                  )
                 )
               )
             )
@@ -521,6 +523,7 @@
     :item-bounds (sfun s -> s :bounds)
     :max-depth 5
     :cap 5
+    :subnode-test (sfun ss some (sfun s cases (-> s :kind) :mesh nil t t) ss)
   )
 )
 

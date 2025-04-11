@@ -66,7 +66,7 @@
       no-move (-> mov len zerop)
       look (if no-move (-> player :look) mov)
       anim (if no-move 0 1)
-      player (move-player player (l* mov (lll 3)))
+      player (move-player player (l* mov (lll 10)))
     )
     (with-vals player
       :anim anim
@@ -135,14 +135,13 @@
   (-> proj mat-4x4->vec-16 gl:mult-matrix)
   (gl:matrix-mode :modelview)
   (gl:load-identity)
-  (gl:color 0 1 0 1)
   (lets (
       ss (map-by-key 'list :shape players)
       shapes-tree (shapes-tree (append ss level-shapes))
     )
     (labels (
         (walk-tree (tree)
-          (with-map-keys (bounds children) tree
+          (with-map-keys (shapes bounds children) tree
             (with-items (min max) bounds
               (lets (
                   center (l* (l+ min max) (lll 1/2))
@@ -151,7 +150,8 @@
                 (gl:with-pushed-matrix
                   (apply #'gl:translate center)
                   (apply #'gl:scale size)
-                  (glut:wire-cube 1)
+                  (if shapes (gl:color 1 0 0 1) (gl:color 0 1 0 1))
+                  (glut:wire-cube 999/1000)
                 )
               )
             )
