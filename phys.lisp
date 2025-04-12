@@ -589,24 +589,14 @@
 )
 
 (defun shapes-tree-contacts (shapes-tree)
-  (lets (r nil c (hash))
+  (lets (pairs nil c (hash) results nil)
     (with-map-keys (shapes tree) shapes-tree
       (labels (
           (walk-tree (node)
             (with-map-keys ((ids :shapes) children) node
               (loop for (id1 id2) in (all-possible-pairs ids)
                 for p = (list id1 id2)
-                do (hash-once p c
-                  (with-map-keys ((s1 id1) (s2 id2)) shapes
-                    (lets (
-                        cs (shapes-contacts s1 s2)
-                      )
-                      (when cs (setf r
-                        (append r (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)))
-                      )
-                    )
-                  )
-                )
+                do (hash-once p c (push p pairs))
               )
               (mapc #'walk-tree children)
             )
@@ -614,8 +604,22 @@
         )
         (walk-tree tree)
       )
+      (mapcar
+        (sfun p with-items (id1 id2) p
+          (with-map-keys ((s1 id1) (s2 id2)) shapes
+            (lets (
+                cs (shapes-contacts s1 s2)
+              )
+              (when cs (setf results
+                (append results (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)))
+              )
+            )
+          )
+        )
+        pairs
+      )
     )
-    r
+    results
   )
 )
 
