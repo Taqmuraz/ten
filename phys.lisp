@@ -496,16 +496,10 @@
                     )
                   )
                 )
-                (concat 'list
-                  (funcall (if (zerop depth) #'pmapcar #'mapcar)
-                    (sfun cut lets (
-                        ss (remove-if-not (sfun s bounds-intersectp (funcall item-bounds s) cut) items)
-                      )
-                      (when (funcall subnode-test ss)
-                        (list (walk-tree ss :bounds cut :depth (+ 1 depth)))
-                      )
-                    )
-                    cuts
+                (loop for cut in cuts
+                  for ss = (remove-if-not (sfun s bounds-intersectp (funcall item-bounds s) cut) items)
+                  append (when (funcall subnode-test ss)
+                    (list (walk-tree ss :bounds cut :depth (+ 1 depth)))
                   )
                 )
               )
