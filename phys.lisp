@@ -604,7 +604,7 @@
         )
         (walk-tree tree)
       )
-      (mapcar
+      (pmapcar
         (sfun p with-items (id1 id2) p
           (with-map-keys ((s1 id1) (s2 id2)) shapes
             (lets (
