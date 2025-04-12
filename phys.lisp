@@ -372,7 +372,7 @@
         )
       )
     )
-    t (error (format "Can't find closest point on shape ~A" shape))
+    t (error (format nil "Can't find closest point on shape ~A" shape))
   )
 )
 
@@ -403,7 +403,7 @@
         )
       )
     )
-    t (error (format "Can't find closest point on shape ~A" shape))
+    t (error (format nil "Can't find closest point on shape ~A" shape))
   )
 )
 
