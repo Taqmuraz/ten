@@ -14,7 +14,6 @@
     #:cl-glu
     #:cffi
     #:cl-freeimage
-    #:eager-future2
     #:uiop
     #:rtg-math
   )
