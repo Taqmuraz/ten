@@ -589,7 +589,7 @@
 )
 
 (defun shapes-tree-contacts (shapes-tree)
-  (lets (pairs nil c (hash) results nil)
+  (lets (pairs nil c (hash))
     (with-map-keys (shapes tree) shapes-tree
       (labels (
           (walk-tree (node)
@@ -604,22 +604,21 @@
         )
         (walk-tree tree)
       )
-      (pmapcar
-        (sfun p with-items (id1 id2) p
-          (with-map-keys ((s1 id1) (s2 id2)) shapes
-            (lets (
-                cs (shapes-contacts s1 s2)
-              )
-              (when cs (setf results
-                (append results (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)))
+      (concat 'list
+        (pmapcar
+          (sfun p with-items (id1 id2) p
+            (with-map-keys ((s1 id1) (s2 id2)) shapes
+              (lets (
+                  cs (shapes-contacts s1 s2)
+                )
+                (mapcar (sfun c with-vals c :id-a id1 :id-b id2) cs)
               )
             )
           )
+          pairs
         )
-        pairs
       )
     )
-    results
   )
 )
 
