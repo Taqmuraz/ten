@@ -461,7 +461,7 @@
         (lets (
             bounds (conds
               bounds bounds
-              (cdr items) (apply #'combine-bounds (mapcar item-bounds items))
+              (cdr items) (reduce #'combine-bounds (mapcar item-bounds items))
               t `((0 0 0)(0 0 0))
             )
           )
