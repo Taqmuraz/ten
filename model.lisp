@@ -160,6 +160,42 @@
   )
 )
 
+(defun load-lisp-anim (data)
+  (with-map-keys (length bones resources) data
+    (lets (
+        resources (coerce resources 'vector)
+        map (loop for (bname . frames) in bones collect
+          (cons (keyword-of bname)
+            (lets (
+                frames (loop for (key cols) in frames collect
+                  (cons key
+                    (with-items (a b c d) (mapcar (sfun i aref resources i) cols)
+                      (list
+                        (append a '(0))
+                        (append b '(0))
+                        (append c '(0))
+                        (append d '(1))
+                      )
+                    )
+                  )
+                )
+                tree (assoc->tree frames #'< #'=)
+              )
+              (sfun key -> (find-bounds tree key #'<) car cdr)
+            )
+          )
+        )
+        map (assoc->hash map)
+      )
+      (make-assoc
+        :length length
+        :bones (keys map)
+        :map (sfun key sfun bone -> map (map-key bone) (map-key key))
+      )
+    )
+  )
+)
+
 (defun animate (anim time)
   (when anim
     (map-key
