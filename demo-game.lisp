@@ -15,12 +15,14 @@
       level-data (-> "res/arena/arena.fbx" load-model-data)
       player-poses (loop for i from 0 below 100 collect (list (floor i 10) 0 (mod i 10)))
       level-model (-> level-data load-model-to-gl load-gl-group)
-      player-model (-> "res/chars/archer_anims.fbx"
-        load-model-data
+      player-model-data (-> "res/chars/archer_anims.fbx" load-model-data)
+      player-model-tree (-> player-model-data :tree)
+      player-model (->
+        player-model-data
         (with-vals
           :anims (make-assoc
-            :idle (-> "res/anims/archer/idle.anim" read-file load-lisp-anim)
-            :walk (-> "res/anims/archer/walk.anim" read-file load-lisp-anim)
+            :idle (-> "res/anims/archer/idle.anim" read-file (load-lisp-anim player-model-tree))
+            :walk (-> "res/anims/archer/walk.anim" read-file (load-lisp-anim player-model-tree))
           )
         )
         load-model-to-gl

@@ -38,18 +38,6 @@
           :bones (-> m ai:bones load-bones)
         )
       )
-      (flip-matrix-yz (m)
-        (lets (
-            flip (classic-matrix
-              (1 0 0 0)
-              (0 0 1 0)
-              (0 1 0 0)
-              (0 0 0 1)
-            )
-          )
-          (mul-mats-4x4 flip m flip)
-        )
-      )
       (load-matrix (m) (-> m mat-from-gl transponed flip-matrix-yz))
       (load-tree (node)
         (make-assoc
@@ -92,20 +80,6 @@
           (cons name func)
         )
       )
-      (replace-tree (tree map)
-        (with-map-keys (name matrix children) tree
-          (lets (
-              p (map-key map name)
-              m (if p p matrix)
-            )
-            (with-vals tree
-              :matrix m
-              :children (loop for c in children collect
-                (replace-tree c map))
-            )
-          )
-        )
-      )
       (load-anim (tree anim)
         (lets (
             chs (-> anim ai:channels)
@@ -124,15 +98,6 @@
               :map func
               :bones bones))
         )
-      )
-      (load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
-        (with-map-keys (name matrix children) tree
-          (lets (mat (mul-mat-4x4 parent matrix))
-            (setf (gethash name pose) mat)
-            (loop for c in children do (load-pose c mat pose))
-          )
-        )
-        pose
       )
       (rotate-root (tree x y z)
         (update tree
@@ -160,7 +125,58 @@
   )
 )
 
-(defun load-lisp-anim (data)
+(defun flip-matrix-yz (m)
+  (lets (
+      flip (classic-matrix
+        (1 0 0 0)
+        (0 0 1 0)
+        (0 1 0 0)
+        (0 0 0 1)
+      )
+    )
+    (mul-mats-4x4 flip m flip)
+  )
+)
+
+(defun flip-matrix-yz-minus-x (m)
+  (lets (
+      flip (classic-matrix
+        (-1 0 0 0)
+        (0 0 1 0)
+        (0 1 0 0)
+        (0 0 0 1)
+      )
+    )
+    (mul-mats-4x4 flip m flip)
+  )
+)
+
+(defun replace-tree (tree map)
+  (with-map-keys (name matrix children) tree
+    (lets (
+        p (map-key map name)
+        m (if p p matrix)
+      )
+      (with-vals tree
+        :matrix m
+        :children (loop for c in children collect
+          (replace-tree c map))
+      )
+    )
+  )
+)
+
+(defun load-pose (tree &optional (parent (mat-identity 4)) (pose (hash)))
+  (with-map-keys (name matrix children) tree
+    (lets (mat (mul-mat-4x4 parent matrix))
+      (setf (gethash name pose) mat)
+      (loop for c in children do (load-pose c mat pose))
+    )
+  )
+  pose
+)
+
+(defun load-lisp-anim (data tree)
   (with-map-keys (length bones resources) data
     (lets (
         resources (coerce resources 'vector)
@@ -170,11 +186,13 @@
                 frames (loop for (key cols) in frames collect
                   (cons key
                     (with-items (a b c d) (mapcar (sfun i aref resources i) cols)
-                      (list
-                        (append a '(0))
-                        (append b '(0))
-                        (append c '(0))
-                        (append d '(1))
+                      (flip-matrix-yz-minus-x
+                        (list
+                          (append a '(0))
+                          (append b '(0))
+                          (append c '(0))
+                          (append d '(1))
+                        )
                       )
                     )
                   )
@@ -185,12 +203,18 @@
             )
           )
         )
-        map (assoc->hash map)
+        fmap (sfun key sfun bone -> map (map-key bone) (map-key key))
+        cached-frames (loop for i from 0 below *anim-frames*
+          for f = (* (/ i *anim-frames*) length)
+          collect
+          (cons f (load-pose (replace-tree tree (map-key fmap f))))
+        )
+        cached-tree (assoc->tree cached-frames #'< #'=)
       )
       (make-assoc
         :length length
         :bones (keys map)
-        :map (sfun key sfun bone -> map (map-key bone) (map-key key))
+        :map (sfun key -> (find-bounds cached-tree key #'<) car cdr)
       )
     )
   )
